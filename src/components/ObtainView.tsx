@@ -167,6 +167,10 @@ interface SourceDisplay {
   // Venture data
   ventureQuantities?: VentureQuantity[];
   ventureCategory?: number; // 17 = Mining, 18 = Botany
+  // Crafting data
+  secretRecipeBook?: number;  // Master recipe book item ID
+  // Gathering data
+  folklore?: number;  // Folklore book item ID
 }
 
 // Helper to get instance icon based on content type
@@ -215,7 +219,8 @@ export function ObtainView({ itemId, sources, recipes, gatheringPoints }: Obtain
       iconEmoji: iconPath ? undefined : '🔨',
       title: '製作',
       subtitle: recipe.craftTypeName || '製作師',
-      detail: `Lv.${recipe.recipeLevel}${recipe.stars > 0 ? ' ★'.repeat(recipe.stars) : ''}`,
+      detail: `Lv.${recipe.classJobLevel || recipe.recipeLevel}${recipe.stars > 0 ? ' ★'.repeat(recipe.stars) : ''}`,
+      secretRecipeBook: recipe.secretRecipeBook,
     });
   });
 
@@ -241,12 +246,17 @@ export function ObtainView({ itemId, sources, recipes, gatheringPoints }: Obtain
     // Use gathering type name as title (e.g., 採掘, 伐木)
     const gatheringTypeName = firstPoint.gatheringTypeName || '採集';
 
+    // Get folklore book requirement (from first point that has it)
+    const folklorePoint = points.find(p => p.folklore);
+    const folklore = folklorePoint?.folklore;
+
     allSources.push({
       type: 'gather',
       iconUrl: iconPath ? `${import.meta.env.BASE_URL}${iconPath}` : undefined,
       iconEmoji: iconPath ? undefined : '📍',
       title: gatheringTypeName,
       detail: levelText,
+      folklore: folklore,
       gatheringPoints: points.map(p => ({
         placeName: p.placeName,
         x: p.x,
@@ -467,6 +477,52 @@ export function ObtainView({ itemId, sources, recipes, gatheringPoints }: Obtain
                 {source.detail}
               </div>
             )}
+            {/* Master recipe book for crafting sources */}
+            {source.secretRecipeBook && (() => {
+              const masterBook = getItemById(source.secretRecipeBook);
+              if (!masterBook) return null;
+              return (
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-xs text-[var(--ffxiv-warning)]">秘笈</span>
+                  <Link
+                    to={`/item/${masterBook.id}`}
+                    className="flex items-center gap-1.5 hover:text-[var(--ffxiv-accent)] transition-colors"
+                  >
+                    <img
+                      src={getItemIconUrl(masterBook.icon)}
+                      alt={masterBook.name}
+                      className="w-5 h-5"
+                      loading="lazy"
+                    />
+                    <span className="text-sm text-[var(--ffxiv-warning)]">{masterBook.name}</span>
+                  </Link>
+                  <CopyButton text={masterBook.name} />
+                </div>
+              );
+            })()}
+            {/* Folklore book for gathering sources */}
+            {source.folklore && (() => {
+              const folkloreBook = getItemById(source.folklore);
+              if (!folkloreBook) return null;
+              return (
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-xs text-[var(--ffxiv-warning)]">傳承錄</span>
+                  <Link
+                    to={`/item/${folkloreBook.id}`}
+                    className="flex items-center gap-1.5 hover:text-[var(--ffxiv-accent)] transition-colors"
+                  >
+                    <img
+                      src={getItemIconUrl(folkloreBook.icon)}
+                      alt={folkloreBook.name}
+                      className="w-5 h-5"
+                      loading="lazy"
+                    />
+                    <span className="text-sm text-[var(--ffxiv-warning)]">{folkloreBook.name}</span>
+                  </Link>
+                  <CopyButton text={folkloreBook.name} />
+                </div>
+              );
+            })()}
             {/* Currency item for exchange sources */}
             {source.currencyItemId && source.currencyAmount && (
               <div className="flex items-center gap-2 mt-1">

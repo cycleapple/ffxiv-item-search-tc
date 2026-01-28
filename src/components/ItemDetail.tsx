@@ -10,6 +10,7 @@ import { MarketPrice } from './MarketPrice';
 import { CraftingPriceTree } from './CraftingPriceTree';
 import { UsedForView } from './UsedForView';
 import { CopyButton } from './CopyButton';
+import { EquipmentStatsView } from './EquipmentStatsView';
 import { useState, useEffect } from 'react';
 import type { Item, Recipe, GatheringPoint, ItemSource } from '../types';
 
@@ -225,6 +226,18 @@ export function ItemDetail() {
           </div>
         )}
       </div>
+
+      {/* Equipment Stats */}
+      {item.equipStats && (
+        <div className="mb-6">
+          <EquipmentStatsView
+            equipStats={item.equipStats}
+            canBeHq={item.canBeHq}
+            equipLevel={item.equipLevel}
+            itemLevel={item.itemLevel}
+          />
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex border-b border-[var(--ffxiv-accent)] mb-4 overflow-x-auto">

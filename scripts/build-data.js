@@ -192,6 +192,9 @@ async function processItems() {
   const categories = await parseCSV(join(DATA_REPO_PATH, 'csv', 'ItemUICategory.csv'));
   const recipes = await parseCSV(join(DATA_REPO_PATH, 'csv', 'Recipe.csv'));
   const gatheringItems = await parseCSV(join(DATA_REPO_PATH, 'csv', 'GatheringItem.csv'));
+  const baseParams = await parseCSV(join(DATA_REPO_PATH, 'csv', 'BaseParam.csv'));
+  const classJobs = await parseCSV(join(DATA_REPO_PATH, 'csv', 'ClassJob.csv'));
+  const classJobCategories = await parseCSV(join(DATA_REPO_PATH, 'csv', 'ClassJobCategory.csv'));
 
   // Fetch patch data from Teamcraft
   console.log('Fetching patch data...');
@@ -210,6 +213,47 @@ async function processItems() {
     }
     console.log(`Loaded ${patchVersionMap.size} patch versions`);
   }
+
+  // Build BaseParam map (stat ID -> name)
+  const baseParamMap = new Map();
+  baseParams.forEach((bp) => {
+    const id = parseInt(bp['#'] || bp.key || '0');
+    const name = (bp['Name'] || '').replace(/<hex:[^>]+>/g, '').trim();
+    if (id > 0 && name) {
+      baseParamMap.set(id, name);
+    }
+  });
+  console.log(`Loaded ${baseParamMap.size} base params`);
+
+  // Build ClassJob map (ID -> abbreviation)
+  const classJobMap = new Map();
+  classJobs.forEach((cj) => {
+    const id = parseInt(cj['#'] || cj.key || '0');
+    const abbr = cj['Abbreviation'] || '';
+    const name = cj['Name'] || '';
+    if (id > 0) {
+      classJobMap.set(id, { abbr, name });
+    }
+  });
+
+  // Build ClassJobCategory map (ID -> job list string)
+  const classJobCategoryMap = new Map();
+  classJobCategories.forEach((cjc) => {
+    const id = parseInt(cjc['#'] || cjc.key || '0');
+    if (id <= 0) return;
+    // Collect all jobs that are True for this category
+    const jobs = [];
+    classJobs.forEach((cj) => {
+      const jobId = parseInt(cj['#'] || cj.key || '0');
+      const abbr = cj['Abbreviation'] || '';
+      if (jobId > 0 && abbr && cjc[abbr] === 'True') {
+        jobs.push(abbr);
+      }
+    });
+    if (jobs.length > 0) {
+      classJobCategoryMap.set(id, jobs.join(' '));
+    }
+  });
 
   // Build category map
   const categoryMap = new Map();
@@ -242,6 +286,7 @@ async function processItems() {
   // Process items
   const itemsOutput = {};
   let count = 0;
+  let equipCount = 0;
 
   items.forEach((item) => {
     const id = parseInt(item['#'] || item.key || '0');
@@ -260,7 +305,7 @@ async function processItems() {
       patch = patchVersionMap.get(patchId);
     }
 
-    itemsOutput[id] = {
+    const itemData = {
       id,
       name,
       description: (item['Description'] || '').trim(),
@@ -278,6 +323,98 @@ async function processItems() {
       isGatherable: gatherableItems.has(id),
       patch,
     };
+
+    // Extract equipment stats for equippable items
+    const physDamage = parseInt(item['Damage{Phys}'] || '0');
+    const magDamage = parseInt(item['Damage{Mag}'] || '0');
+    const delay = parseInt(item['Delay<ms>'] || '0');
+    const physDefense = parseInt(item['Defense{Phys}'] || '0');
+    const magDefense = parseInt(item['Defense{Mag}'] || '0');
+    const blockRate = parseInt(item['BlockRate'] || '0');
+    const blockStrength = parseInt(item['Block'] || '0');
+    const materiaSlots = parseInt(item['MateriaSlotCount'] || '0');
+    const classJobCategoryId = parseInt(item['ClassJobCategory'] || '0');
+    const repairClassId = parseInt(item['ClassJob{Repair}'] || '0');
+    const dyeCount = parseInt(item['DyeCount'] || '0');
+    const isUnique = item['IsUnique'] === 'True' || item['IsUnique'] === '1';
+    const isAdvancedMeldingPermitted = item['IsAdvancedMeldingPermitted'] === 'True' || item['IsAdvancedMeldingPermitted'] === '1';
+
+    // Collect base stats
+    const stats = [];
+    for (let i = 0; i < 6; i++) {
+      const paramId = parseInt(item[`BaseParam[${i}]`] || '0');
+      const paramValue = parseInt(item[`BaseParamValue[${i}]`] || '0');
+      if (paramId > 0 && paramValue > 0) {
+        const paramName = baseParamMap.get(paramId) || `屬性${paramId}`;
+        stats.push({ id: paramId, name: paramName, value: paramValue });
+      }
+    }
+
+    // Collect HQ bonus stats (special bonus params)
+    const hqStats = [];
+    for (let i = 0; i < 6; i++) {
+      const paramId = parseInt(item[`BaseParam{Special}[${i}]`] || '0');
+      const paramValue = parseInt(item[`BaseParamValue{Special}[${i}]`] || '0');
+      if (paramId > 0 && paramValue > 0) {
+        const paramName = baseParamMap.get(paramId) || `屬性${paramId}`;
+        hqStats.push({ id: paramId, name: paramName, value: paramValue });
+      }
+    }
+
+    // Only add equipStats if item has equipment-related stats
+    const hasEquipStats = physDamage > 0 || magDamage > 0 || physDefense > 0 || magDefense > 0 ||
+                          stats.length > 0 || materiaSlots > 0 || classJobCategoryId > 0;
+
+    if (hasEquipStats) {
+      const equipStats = {
+        stats: stats,
+      };
+
+      // Add weapon stats
+      if (physDamage > 0) equipStats.physicalDamage = physDamage;
+      if (magDamage > 0) equipStats.magicDamage = magDamage;
+      if (delay > 0) {
+        equipStats.delay = delay;
+        // Calculate auto-attack: damage / 3 * delay / 1000
+        const damage = Math.max(physDamage, magDamage);
+        if (damage > 0) {
+          equipStats.autoAttack = parseFloat((damage / 3 * delay / 1000).toFixed(2));
+        }
+      }
+
+      // Add defense stats
+      if (physDefense > 0) equipStats.physicalDefense = physDefense;
+      if (magDefense > 0) equipStats.magicDefense = magDefense;
+      if (blockRate > 0) equipStats.blockRate = blockRate;
+      if (blockStrength > 0) equipStats.blockStrength = blockStrength;
+
+      // Add HQ stats if available and item can be HQ
+      if (hqStats.length > 0 && itemData.canBeHq) {
+        equipStats.hqStats = hqStats;
+      }
+
+      // Add class/job category name
+      if (classJobCategoryId > 0 && classJobCategoryMap.has(classJobCategoryId)) {
+        equipStats.classJobCategoryName = classJobCategoryMap.get(classJobCategoryId);
+      }
+
+      // Add repair class info
+      if (repairClassId > 0 && classJobMap.has(repairClassId)) {
+        equipStats.repairClassId = repairClassId;
+        equipStats.repairClassName = classJobMap.get(repairClassId).abbr;
+      }
+
+      // Add other equipment info
+      if (materiaSlots > 0) equipStats.materiaSlots = materiaSlots;
+      if (isAdvancedMeldingPermitted) equipStats.isAdvancedMeldingPermitted = true;
+      if (dyeCount > 0) equipStats.dyeCount = dyeCount;
+      if (isUnique) equipStats.isUnique = true;
+
+      itemData.equipStats = equipStats;
+      equipCount++;
+    }
+
+    itemsOutput[id] = itemData;
     count++;
   });
 
@@ -294,7 +431,7 @@ async function processItems() {
   };
 
   writeFileSync(join(OUTPUT_PATH, 'items.json'), JSON.stringify(output));
-  console.log(`Processed ${count} items, ${usedCategories.length} categories`);
+  console.log(`Processed ${count} items (${equipCount} with equipment stats), ${usedCategories.length} categories`);
 }
 
 /**
@@ -305,6 +442,8 @@ async function processRecipes() {
 
   const recipes = await parseCSV(join(DATA_REPO_PATH, 'csv', 'Recipe.csv'));
   const craftTypes = await parseCSV(join(DATA_REPO_PATH, 'csv', 'CraftType.csv'));
+  const recipeLevelTable = await parseCSV(join(DATA_REPO_PATH, 'csv', 'RecipeLevelTable.csv'));
+  const secretRecipeBooks = await parseCSV(join(DATA_REPO_PATH, 'csv', 'SecretRecipeBook.csv'));
 
   // Build craft type map
   const craftTypeMap = new Map();
@@ -316,9 +455,38 @@ async function processRecipes() {
     }
   });
 
+  // Build secret recipe book map (SecretRecipeBook ID -> Item ID)
+  const secretRecipeBookMap = new Map();
+  secretRecipeBooks.forEach((srb) => {
+    const id = parseInt(srb['#'] || srb.key || '0');
+    const itemId = parseInt(srb['Item'] || '0');
+    if (id > 0 && itemId > 0) {
+      secretRecipeBookMap.set(id, itemId);
+    }
+  });
+  console.log(`Loaded ${secretRecipeBookMap.size} secret recipe book entries`);
+
+  // Build recipe level table map (rlvl -> details)
+  const recipeLevelMap = new Map();
+  recipeLevelTable.forEach((rlt) => {
+    const id = parseInt(rlt['#'] || rlt.key || '0');
+    if (id > 0) {
+      recipeLevelMap.set(id, {
+        classJobLevel: parseInt(rlt['ClassJobLevel'] || '0'),
+        stars: parseInt(rlt['Stars'] || '0'),
+        suggestedCraftsmanship: parseInt(rlt['SuggestedCraftsmanship'] || '0'),
+        difficulty: parseInt(rlt['Difficulty'] || '0'),
+        quality: parseInt(rlt['Quality'] || '0'),
+        durability: parseInt(rlt['Durability'] || '0'),
+      });
+    }
+  });
+  console.log(`Loaded ${recipeLevelMap.size} recipe level entries`);
+
   // Process recipes grouped by result item
   const recipesOutput = {};
   let count = 0;
+  let masterBookCount = 0;
 
   recipes.forEach((recipe) => {
     const id = parseInt(recipe['#'] || recipe.key || '0');
@@ -327,6 +495,10 @@ async function processRecipes() {
     if (id <= 0 || itemId <= 0) return;
 
     const craftType = parseInt(recipe['CraftType'] || '0');
+    const recipeLevelId = parseInt(recipe['RecipeLevelTable'] || recipe['RecipeLevel'] || '1');
+    const secretRecipeBookId = parseInt(recipe['SecretRecipeBook'] || '0');
+    // Convert SecretRecipeBook ID to actual Item ID using the mapping table
+    const secretRecipeBook = secretRecipeBookId > 0 ? secretRecipeBookMap.get(secretRecipeBookId) : undefined;
 
     // Parse ingredients
     const ingredients = [];
@@ -340,16 +512,31 @@ async function processRecipes() {
 
     if (ingredients.length === 0) return;
 
+    // Get recipe level details
+    const levelDetails = recipeLevelMap.get(recipeLevelId);
+
     const recipeData = {
       id,
       itemId,
       craftType,
       craftTypeName: craftTypeMap.get(craftType)?.name || '',
-      recipeLevel: parseInt(recipe['RecipeLevelTable'] || recipe['RecipeLevel'] || '1'),
-      stars: parseInt(recipe['Stars'] || '0'),
+      recipeLevel: recipeLevelId,
+      stars: levelDetails?.stars || parseInt(recipe['Stars'] || '0'),
       ingredients,
       resultAmount: parseInt(recipe['Amount{Result}'] || recipe['AmountResult'] || '1'),
+      // Crafting requirements
+      requiredCraftsmanship: parseInt(recipe['RequiredCraftsmanship'] || '0') || undefined,
+      requiredControl: parseInt(recipe['RequiredControl'] || '0') || undefined,
+      // Recipe level details
+      classJobLevel: levelDetails?.classJobLevel || undefined,
+      difficulty: levelDetails?.difficulty || undefined,
+      quality: levelDetails?.quality || undefined,
+      durability: levelDetails?.durability || undefined,
+      // Master recipe book requirement (item ID)
+      secretRecipeBook: secretRecipeBook || undefined,
     };
+
+    if (secretRecipeBook) masterBookCount++;
 
     if (!recipesOutput[itemId]) {
       recipesOutput[itemId] = [];
@@ -364,7 +551,7 @@ async function processRecipes() {
   };
 
   writeFileSync(join(OUTPUT_PATH, 'recipes.json'), JSON.stringify(output));
-  console.log(`Processed ${count} recipes`);
+  console.log(`Processed ${count} recipes (${masterBookCount} with master books)`);
 }
 
 /**

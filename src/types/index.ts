@@ -18,6 +18,42 @@ export interface Item {
   isGatherable?: boolean;
   // Patch version (e.g., "2.3", "7.0")
   patch?: string;
+  // Equipment stats (only for equippable items)
+  equipStats?: EquipmentStats;
+}
+
+// Equipment stats for weapons and armor
+export interface EquipmentStats {
+  // Weapon stats
+  physicalDamage?: number;
+  magicDamage?: number;
+  delay?: number;        // Attack speed in ms
+  autoAttack?: number;   // Calculated: damage / 3 * delay / 1000
+  // Defense stats
+  physicalDefense?: number;
+  magicDefense?: number;
+  blockRate?: number;
+  blockStrength?: number;
+  // Base params (stats)
+  stats: ItemStat[];
+  // HQ bonus stats (if canBeHq)
+  hqStats?: ItemStat[];
+  // Equipment info
+  classJobCategoryName?: string;  // e.g., "GLA PLD"
+  repairClassId?: number;
+  repairClassName?: string;       // e.g., "BSM"
+  materiaSlots?: number;
+  isAdvancedMeldingPermitted?: boolean;
+  dyeCount?: number;
+  isUnique?: boolean;
+  sellPrice?: number;
+  gcSealPrice?: number;           // Grand Company seal value
+}
+
+export interface ItemStat {
+  id: number;
+  name: string;
+  value: number;
 }
 
 export interface ItemCategory {
@@ -47,6 +83,16 @@ export interface Recipe {
   stars: number;
   ingredients: RecipeIngredient[];
   resultAmount: number;
+  // Crafting requirements
+  requiredCraftsmanship?: number;
+  requiredControl?: number;
+  // Recipe level details
+  classJobLevel?: number;
+  difficulty?: number;    // Progress required
+  quality?: number;       // Quality cap
+  durability?: number;
+  // Master recipe book requirement
+  secretRecipeBook?: number;  // Item ID of required master book
 }
 
 export interface RecipeIngredient {

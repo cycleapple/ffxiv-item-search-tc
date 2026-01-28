@@ -294,11 +294,10 @@ export function GatheringView({ points }: GatheringViewProps) {
                       const nodeLeft = gameCoordToPercent(point.x, sizeFactor);
                       const nodeTop = gameCoordToPercent(point.y, sizeFactor);
                       const nodeIcon = NODE_TYPE_ICONS[point.gatheringType] || NODE_TYPE_ICONS[0];
-                      // Use actual radius from data, or default to ~50 units (which appears as ~2.5 game coords)
+                      // Use actual radius from data, or default to ~50 units
                       const nodeRadius = point.radius || 50;
-                      // Convert radius: the radius in data seems to be in different units
-                      // Empirically, radius of 50 ≈ 2.5 game coords
-                      const radiusGameCoords = nodeRadius / 20;
+                      // Convert radius: the raw value ~50-80 should appear as ~0.5-0.8 game coords (small circle like Teamcraft)
+                      const radiusGameCoords = nodeRadius / 100;
                       const radiusPercent = radiusGameCoords * sizeFactor / 40.96;
                       return (
                         <div key={point.id || i}>
