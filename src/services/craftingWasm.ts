@@ -11,12 +11,12 @@ import type {
   SolverResult,
 } from '../types/crafting';
 
-// Lazy-loaded WASM module
+// Lazy-loaded WASM module (bundler target auto-initializes on import)
 let wasmModule: typeof import('../wasm/app_wasm') | null = null;
 let wasmInitPromise: Promise<typeof import('../wasm/app_wasm')> | null = null;
 
 /**
- * Load and initialize the WASM module
+ * Load the WASM module (auto-initialized with bundler target)
  */
 export async function loadWasm(): Promise<typeof import('../wasm/app_wasm')> {
   if (wasmModule) {
@@ -28,9 +28,8 @@ export async function loadWasm(): Promise<typeof import('../wasm/app_wasm')> {
   }
 
   wasmInitPromise = (async () => {
+    // Bundler target auto-initializes on import, no manual init needed
     const wasm = await import('../wasm/app_wasm');
-    // Initialize the WASM module
-    await wasm.default();
     wasmModule = wasm;
     return wasm;
   })();
