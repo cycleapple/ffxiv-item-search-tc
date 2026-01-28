@@ -11,6 +11,7 @@ const DEFAULT_FILTERS: SearchFilters = {
   minEquipLevel: 1,
   maxEquipLevel: 100,
   classJobId: null,
+  selectedJobs: [],
   craftableOnly: false,
   gatherableOnly: false,
   canBeHq: null,
@@ -38,6 +39,7 @@ function hasActiveFilters(filters: SearchFilters): boolean {
     filters.maxLevel !== 999 ||
     filters.minEquipLevel !== 1 ||
     filters.maxEquipLevel !== 100 ||
+    filters.selectedJobs.length > 0 ||
     filters.craftableOnly ||
     filters.gatherableOnly ||
     filters.canBeHq !== null ||

@@ -201,6 +201,7 @@ export interface SearchFilters {
   minEquipLevel: number;
   maxEquipLevel: number;
   classJobId: number | null;
+  selectedJobs: string[];         // Selected job abbreviations for "worn by" filter
   craftableOnly: boolean;
   gatherableOnly: boolean;
   canBeHq: boolean | null;        // null = any, true = HQ only, false = NQ only

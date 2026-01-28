@@ -107,10 +107,18 @@ export function searchItems(filters: SearchFilters, limit = 100): SearchResult[]
       return false;
     }
 
-    // Class/Job filter (simplified - would need ClassJobCategory data)
-    if (filters.classJobId !== null && item.classJobCategory !== undefined) {
-      // This would require checking if the classJobCategory includes the selected job
-      // For now, we'll skip this filter if classJobCategory doesn't match
+    // Job filter - check if item can be worn by any of the selected jobs
+    if (filters.selectedJobs.length > 0) {
+      // Items must have equipStats with classJobCategoryName to be filtered by job
+      if (!item.equipStats?.classJobCategoryName) {
+        return false;
+      }
+      // Check if any selected job is in the classJobCategoryName
+      const itemJobs = item.equipStats.classJobCategoryName.split(/\s+/);
+      const hasMatchingJob = filters.selectedJobs.some(job => itemJobs.includes(job));
+      if (!hasMatchingJob) {
+        return false;
+      }
     }
 
     return true;
