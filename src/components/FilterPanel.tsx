@@ -401,7 +401,7 @@ export function FilterPanel({ filters, categories, onFilterChange, onReset }: Fi
                   </button>
 
                   {/* Job icons */}
-                  <div className="flex flex-wrap gap-1">
+                  <div className="flex flex-wrap gap-2">
                     {category.jobs.map((job) => {
                       const isSelected = filters.selectedJobs.includes(job.abbr);
                       return (
