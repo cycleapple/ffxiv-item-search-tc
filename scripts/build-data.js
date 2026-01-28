@@ -1238,25 +1238,33 @@ async function processSources() {
     console.log('Processing instance/dungeon drop data...');
 
     // Load Traditional Chinese instance names from ContentFinderCondition.csv
+    // Map by ContentType + Content combination since Content alone is not unique
+    // (same Content ID can exist for dungeons, chocobo racing, etc.)
     const tcContentFinder = await parseCSV(join(DATA_REPO_PATH, 'csv', 'ContentFinderCondition.csv'));
-    const tcInstanceNameMap = new Map(); // ID -> TC name
+    const tcInstanceNameMap = new Map(); // "ContentType-Content" -> TC name
     tcContentFinder.forEach((cfc) => {
-      const id = parseInt(cfc['#'] || cfc.key || '0');
+      const contentId = parseInt(cfc['Content'] || '0');
+      const contentType = parseInt(cfc['ContentType'] || '0');
       const name = cfc['Name'] || '';
-      if (id > 0 && name) {
-        tcInstanceNameMap.set(id, name);
+      if (contentId > 0 && name) {
+        // Create compound key: contentType-contentId
+        const key = `${contentType}-${contentId}`;
+        tcInstanceNameMap.set(key, name);
       }
     });
-    console.log(`Loaded ${tcInstanceNameMap.size} TC instance names from local CSV`);
+    console.log(`Loaded ${tcInstanceNameMap.size} TC instance names from local CSV (by ContentType-Content)`);
 
     // Load English instance names from xivapi datamining repo
+    // Build EN name -> TC name mapping for fallback when compound key doesn't match
     console.log('Fetching English instance names for mapping...');
     const enContentFinder = await fetchCSV(EN_CONTENT_FINDER);
-    const enToTcNameMap = new Map(); // EN name -> TC name (for instances not in local CSV by ID)
+    const enToTcNameMap = new Map(); // EN name -> TC name
     enContentFinder.forEach((cfc) => {
-      const id = parseInt(cfc['#'] || '0');
+      const contentId = parseInt(cfc['Content'] || '0');
+      const contentType = parseInt(cfc['ContentType'] || '0');
       const enName = (cfc['Name'] || '').trim();
-      const tcName = tcInstanceNameMap.get(id);
+      const tcKey = `${contentType}-${contentId}`;
+      const tcName = tcInstanceNameMap.get(tcKey);
       if (enName && tcName) {
         // Normalize EN name for matching (lowercase, remove special chars)
         const normalizedEn = enName.toLowerCase().replace(/[–—]/g, '-');
@@ -1279,14 +1287,15 @@ async function processSources() {
         const instance = instances[absId];
 
         // Get content type from Teamcraft data
-        if (instance && instance.contentType) {
-          if (!instanceContentTypes.includes(instance.contentType)) {
-            instanceContentTypes.push(instance.contentType);
-          }
+        const contentType = instance?.contentType || 0;
+        if (contentType && !instanceContentTypes.includes(contentType)) {
+          instanceContentTypes.push(contentType);
         }
 
-        // Try TC name first (from ContentFinderCondition.csv by ID)
-        const tcName = tcInstanceNameMap.get(absId);
+        // Try TC name first using compound key (ContentType-Content)
+        // Teamcraft instance ID corresponds to Content column in ContentFinderCondition
+        const tcKey = `${contentType}-${absId}`;
+        const tcName = tcInstanceNameMap.get(tcKey);
         if (tcName) {
           instanceNames.push(tcName);
           return;
