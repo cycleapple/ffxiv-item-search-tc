@@ -7,96 +7,74 @@ import type {
   SolverResult,
 } from '../types/crafting';
 
-// Import WASM module
-import init, {
-  raphael_solve,
-  dfs_solve,
-  nq_solve,
-  reflect_solve,
-  simulate,
-} from '../wasm/app_wasm';
-
 interface WorkerMessage {
   status: CraftingStatus;
   solver: SolverType;
   options: SolverOptions;
 }
 
-let wasmInitialized = false;
-
-async function ensureWasmInitialized() {
-  if (!wasmInitialized) {
-    await init();
-    wasmInitialized = true;
-  }
-}
-
-async function solve(
-  status: CraftingStatus,
-  solver: SolverType,
-  options: SolverOptions
-): Promise<SolverResult> {
-  await ensureWasmInitialized();
-
-  let actions: CraftingAction[];
-
-  switch (solver) {
-    case 'raphael':
-      actions = raphael_solve(
-        status,
-        options.targetQuality ?? null,
-        options.useManipulation ?? true,
-        options.useHeartAndSoul ?? false,
-        options.useQuickInnovation ?? false,
-        options.useTrainedEye ?? false,
-        options.backloadProgress ?? false,
-        options.adversarial ?? false
-      );
-      break;
-
-    case 'dfs':
-      actions = dfs_solve(
-        status,
-        options.depth ?? 6,
-        options.specialist ?? false
-      );
-      break;
-
-    case 'nq':
-      actions = nq_solve(
-        status,
-        options.depth ?? 6,
-        options.specialist ?? false
-      );
-      break;
-
-    case 'reflect':
-      actions = reflect_solve(
-        status,
-        options.useObserve ?? false
-      );
-      break;
-
-    default:
-      throw new Error(`Unknown solver type: ${solver}`);
-  }
-
-  // Simulate to get final status
-  const result = simulate(status, actions);
-
-  return {
-    actions,
-    solver,
-    finalStatus: result.status,
-  };
-}
-
-// Worker message handler
+// Worker message handler - dynamically load WASM on first use
 self.onmessage = async (e: MessageEvent<WorkerMessage>) => {
   try {
     const { status, solver, options } = e.data;
-    const result = await solve(status, solver, options);
-    self.postMessage(result);
+
+    // Dynamically import and initialize WASM
+    const wasm = await import('../wasm/app_wasm');
+    await wasm.default();
+
+    let actions: CraftingAction[];
+
+    switch (solver) {
+      case 'raphael':
+        actions = wasm.raphael_solve(
+          status,
+          options.targetQuality ?? null,
+          options.useManipulation ?? true,
+          options.useHeartAndSoul ?? false,
+          options.useQuickInnovation ?? false,
+          options.useTrainedEye ?? false,
+          options.backloadProgress ?? false,
+          options.adversarial ?? false
+        );
+        break;
+
+      case 'dfs':
+        actions = wasm.dfs_solve(
+          status,
+          options.depth ?? 6,
+          options.specialist ?? false
+        );
+        break;
+
+      case 'nq':
+        actions = wasm.nq_solve(
+          status,
+          options.depth ?? 6,
+          options.specialist ?? false
+        );
+        break;
+
+      case 'reflect':
+        actions = wasm.reflect_solve(
+          status,
+          options.useObserve ?? false
+        );
+        break;
+
+      default:
+        throw new Error(`Unknown solver type: ${solver}`);
+    }
+
+    // Simulate to get final status
+    const result = wasm.simulate(status, actions);
+
+    const solverResult: SolverResult = {
+      actions,
+      solver,
+      finalStatus: result.status,
+    };
+
+    self.postMessage(solverResult);
   } catch (error) {
     self.postMessage({
       error: error instanceof Error ? error.message : String(error),
