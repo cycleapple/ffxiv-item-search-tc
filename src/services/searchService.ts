@@ -80,11 +80,38 @@ export function searchItems(filters: SearchFilters, limit = 100): SearchResultWi
   let results: Item[];
 
   if (filters.query.trim()) {
-    // Search by query
+    const query = filters.query.trim().toLowerCase();
+
+    // Search by query using FlexSearch
     const searchResults = itemIndex.search(filters.query, { limit: 5000 }) as number[];
+    const flexSearchIds = new Set(searchResults);
+
     results = searchResults
       .map((id: number) => itemsMap.get(id))
       .filter((item): item is Item => item !== undefined);
+
+    // Also do substring search across all names (TC, EN, JA, CN) for better CJK support
+    // This catches cases where FlexSearch tokenization doesn't match partial strings
+    for (const [id, item] of itemsMap) {
+      if (flexSearchIds.has(id)) continue; // Already in results
+
+      // Check TC name and description
+      if (item.name.toLowerCase().includes(query) ||
+          (item.description && item.description.toLowerCase().includes(query))) {
+        results.push(item);
+        continue;
+      }
+
+      // Check multilingual names
+      const multiNames = multilingualNames[id];
+      if (multiNames) {
+        if ((multiNames.en && multiNames.en.toLowerCase().includes(query)) ||
+            (multiNames.ja && multiNames.ja.toLowerCase().includes(query)) ||
+            (multiNames.cn && multiNames.cn.toLowerCase().includes(query))) {
+          results.push(item);
+        }
+      }
+    }
   } else {
     // No query, return all items
     results = Array.from(itemsMap.values());
