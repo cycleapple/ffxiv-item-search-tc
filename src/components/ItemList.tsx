@@ -5,13 +5,50 @@ import { ItemCard } from './ItemCard';
 interface ItemListProps {
   results: SearchResult[];
   loading?: boolean;
+  hasSearched?: boolean;  // Whether user has initiated a search
 }
 
-export function ItemList({ results, loading }: ItemListProps) {
+export function ItemList({ results, loading, hasSearched = true }: ItemListProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-10 w-10 border-3 border-[var(--ffxiv-border)] border-t-[var(--ffxiv-accent)]"></div>
+      </div>
+    );
+  }
+
+  // Initial state - no search performed yet
+  if (!hasSearched) {
+    return (
+      <div className="text-center py-16">
+        <div className="mb-6">
+          <svg
+            className="mx-auto h-16 w-16 text-[var(--ffxiv-accent)] opacity-60"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+        </div>
+        <h2 className="text-xl font-medium text-[var(--ffxiv-text)] mb-2">
+          搜尋 FFXIV 物品
+        </h2>
+        <p className="text-[var(--ffxiv-muted)] mb-6 max-w-md mx-auto">
+          輸入物品名稱開始搜尋，或使用進階篩選條件
+        </p>
+        <div className="flex flex-wrap justify-center gap-2 text-sm text-[var(--ffxiv-muted)]">
+          <span className="px-3 py-1.5 bg-[var(--ffxiv-card)] rounded-full">武器</span>
+          <span className="px-3 py-1.5 bg-[var(--ffxiv-card)] rounded-full">防具</span>
+          <span className="px-3 py-1.5 bg-[var(--ffxiv-card)] rounded-full">素材</span>
+          <span className="px-3 py-1.5 bg-[var(--ffxiv-card)] rounded-full">消耗品</span>
+          <span className="px-3 py-1.5 bg-[var(--ffxiv-card)] rounded-full">傢俱</span>
+        </div>
       </div>
     );
   }

@@ -198,9 +198,15 @@ export interface SearchFilters {
   categoryId: number | null;
   minLevel: number;
   maxLevel: number;
+  minEquipLevel: number;
+  maxEquipLevel: number;
   classJobId: number | null;
   craftableOnly: boolean;
   gatherableOnly: boolean;
+  canBeHq: boolean | null;        // null = any, true = HQ only, false = NQ only
+  tradeable: boolean | null;      // null = any, true = tradeable, false = untradeable
+  rarity: number | null;          // 1-4 (white, green, blue, purple)
+  patch: string | null;           // e.g., "7.0", "6.5"
 }
 
 export interface SearchResult {

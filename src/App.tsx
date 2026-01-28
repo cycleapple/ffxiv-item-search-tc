@@ -10,7 +10,7 @@ import { useSearch } from './hooks/useSearch';
 
 function HomePage() {
   const { categories, loading, error } = useItemData();
-  const { filters, results, isSearching, updateQuery, updateFilters, resetFilters } = useSearch();
+  const { filters, results, isSearching, hasSearched, updateQuery, updateFilters, resetFilters } = useSearch();
   const [showFilters, setShowFilters] = useState(false);
 
   if (error) {
@@ -67,7 +67,7 @@ function HomePage() {
       )}
 
       {/* Results */}
-      <ItemList results={results} loading={loading || isSearching} />
+      <ItemList results={results} loading={loading || isSearching} hasSearched={hasSearched} />
     </div>
   );
 }

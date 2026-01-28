@@ -61,9 +61,16 @@ export function searchItems(filters: SearchFilters, limit = 100): SearchResult[]
       return false;
     }
 
-    // Level filter
+    // Item Level filter
     if (item.itemLevel < filters.minLevel || item.itemLevel > filters.maxLevel) {
       return false;
+    }
+
+    // Equip Level filter
+    if (filters.minEquipLevel !== 1 || filters.maxEquipLevel !== 100) {
+      if (item.equipLevel < filters.minEquipLevel || item.equipLevel > filters.maxEquipLevel) {
+        return false;
+      }
     }
 
     // Craftable filter
@@ -73,6 +80,30 @@ export function searchItems(filters: SearchFilters, limit = 100): SearchResult[]
 
     // Gatherable filter
     if (filters.gatherableOnly && !item.isGatherable) {
+      return false;
+    }
+
+    // HQ filter
+    if (filters.canBeHq !== null) {
+      if (filters.canBeHq && !item.canBeHq) return false;
+      if (!filters.canBeHq && item.canBeHq) return false;
+    }
+
+    // Tradeable filter
+    if (filters.tradeable !== null) {
+      // isUntradable is true when item cannot be traded
+      const isTradeable = !item.isUntradable;
+      if (filters.tradeable && !isTradeable) return false;
+      if (!filters.tradeable && isTradeable) return false;
+    }
+
+    // Rarity filter
+    if (filters.rarity !== null && item.rarity !== filters.rarity) {
+      return false;
+    }
+
+    // Patch filter
+    if (filters.patch !== null && item.patch !== filters.patch) {
       return false;
     }
 
@@ -139,4 +170,23 @@ export function getItemByName(name: string): Item | undefined {
     }
   }
   return undefined;
+}
+
+/**
+ * Get all unique patches from items
+ */
+export function getAllPatches(): string[] {
+  const patches = new Set<string>();
+  for (const item of itemsMap.values()) {
+    if (item.patch) {
+      patches.add(item.patch);
+    }
+  }
+  return Array.from(patches).sort((a, b) => {
+    // Sort patches in descending order (newest first)
+    const [aMajor, aMinor] = a.split('.').map(Number);
+    const [bMajor, bMinor] = b.split('.').map(Number);
+    if (bMajor !== aMajor) return bMajor - aMajor;
+    return bMinor - aMinor;
+  });
 }
