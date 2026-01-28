@@ -169,31 +169,6 @@ interface SourceDisplay {
   ventureCategory?: number; // 17 = Mining, 18 = Botany
 }
 
-// Helper to get icon URL for currency items
-function getCurrencyIconUrl(currencyItemId: number): string | undefined {
-  // Tomestones (28-46)
-  if (currencyItemId >= 28 && currencyItemId <= 46) {
-    return XIVAPI_ICONS.tomestone;
-  }
-  // GC Seals (25-27)
-  if (currencyItemId >= 25 && currencyItemId <= 27) {
-    return XIVAPI_ICONS.gcshop;
-  }
-  // MGP (29)
-  if (currencyItemId === 29) {
-    return 'https://xivapi.com/i/065000/065025.png';
-  }
-  // Wolf Marks (25)
-  if (currencyItemId === 25) {
-    return XIVAPI_ICONS.wolfmarks;
-  }
-  // Skybuilders' Scrip (28XXX range)
-  if (currencyItemId >= 28000 && currencyItemId <= 28999) {
-    return XIVAPI_ICONS.skybuilders;
-  }
-  return undefined;
-}
-
 // Helper to get instance icon based on content type
 function getInstanceIcon(contentTypes?: number[]): string {
   if (!contentTypes || contentTypes.length === 0) return XIVAPI_ICONS.dungeon;

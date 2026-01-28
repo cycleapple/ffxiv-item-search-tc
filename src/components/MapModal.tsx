@@ -34,17 +34,17 @@ interface ZoneMapInfo {
 }
 
 // Zone map cache (loaded from data)
-let zoneMapCache: Record<string, ZoneMapInfo> | null = null;
+let zoneMapCache: Record<string, ZoneMapInfo> = {};
 let loadingPromise: Promise<Record<string, ZoneMapInfo>> | null = null;
 
 async function loadZoneMapData(): Promise<Record<string, ZoneMapInfo>> {
-  if (zoneMapCache) return zoneMapCache;
+  if (Object.keys(zoneMapCache).length > 0) return zoneMapCache;
   if (loadingPromise) return loadingPromise;
 
   loadingPromise = fetch(`${import.meta.env.BASE_URL}data/zone-maps.json`)
     .then((res) => res.json())
     .then((data) => {
-      zoneMapCache = data.maps || {};
+      zoneMapCache = (data.maps || {}) as Record<string, ZoneMapInfo>;
       return zoneMapCache;
     })
     .catch((err) => {

@@ -69,30 +69,32 @@ interface ZoneMapInfo {
 const MAP_BASE_URL = 'https://xivapi.com/m';
 
 // Zone map cache - by name and by id
-let zoneMapCache: Record<string, ZoneMapInfo> | null = null;
-let zoneMapByIdCache: Record<number, ZoneMapInfo> | null = null;
+let zoneMapCache: Record<string, ZoneMapInfo> = {};
+let zoneMapByIdCache: Record<number, ZoneMapInfo> = {};
+let zoneMapLoaded = false;
 
 async function loadZoneMapData(): Promise<{
   byName: Record<string, ZoneMapInfo>;
   byId: Record<number, ZoneMapInfo>;
 }> {
-  if (zoneMapCache && zoneMapByIdCache) {
+  if (zoneMapLoaded) {
     return { byName: zoneMapCache, byId: zoneMapByIdCache };
   }
 
   try {
     const res = await fetch(`${import.meta.env.BASE_URL}data/zone-maps.json`);
     const data = await res.json();
-    zoneMapCache = data.maps || {};
+    zoneMapCache = (data.maps || {}) as Record<string, ZoneMapInfo>;
 
     // Create lookup by map ID
     zoneMapByIdCache = {};
-    Object.values(zoneMapCache).forEach((info: ZoneMapInfo) => {
+    Object.values(zoneMapCache).forEach((info) => {
       if (info.id) {
-        zoneMapByIdCache![info.id] = info;
+        zoneMapByIdCache[info.id] = info;
       }
     });
 
+    zoneMapLoaded = true;
     return { byName: zoneMapCache, byId: zoneMapByIdCache };
   } catch {
     return { byName: {}, byId: {} };
