@@ -264,24 +264,21 @@ export async function solve(
 }
 
 /**
- * Solve using Web Worker for non-blocking operation
+ * Invoke WASM solver in a Web Worker
+ * Following the same pattern as ffxiv-best-craft
  */
-export function solveInWorker(
-  status: CraftingStatus,
-  solver: SolverType,
-  options: SolverOptions
-): Promise<SolverResult> {
+function invokeWasmSolver(name: string, args: Record<string, unknown>): Promise<CraftingAction[]> {
   return new Promise((resolve, reject) => {
     const worker = new Worker(
       new URL('./solverWorker.ts', import.meta.url),
       { type: 'module' }
     );
 
-    worker.onmessage = (e: MessageEvent<SolverResult | { error: string }>) => {
-      if ('error' in e.data) {
-        reject(new Error(e.data.error));
-      } else {
+    worker.onmessage = (e) => {
+      if (e.data.error === undefined) {
         resolve(e.data);
+      } else {
+        reject(new Error(e.data.error));
       }
       worker.terminate();
     };
@@ -291,6 +288,68 @@ export function solveInWorker(
       worker.terminate();
     };
 
-    worker.postMessage({ status, solver, options });
+    // Send solver name and JSON-stringified args (same as original)
+    worker.postMessage({ name, args: JSON.stringify(args) });
   });
+}
+
+/**
+ * Solve using Web Worker for non-blocking operation
+ */
+export async function solveInWorker(
+  status: CraftingStatus,
+  solver: SolverType,
+  options: SolverOptions
+): Promise<SolverResult> {
+  let actions: CraftingAction[];
+
+  switch (solver) {
+    case 'raphael':
+      actions = await invokeWasmSolver('raphael_solve', {
+        status,
+        targetQuality: options.targetQuality ?? null,
+        useManipulation: options.useManipulation ?? true,
+        useHeartAndSoul: options.useHeartAndSoul ?? false,
+        useQuickInnovation: options.useQuickInnovation ?? false,
+        useTrainedEye: options.useTrainedEye ?? false,
+        backloadProgress: options.backloadProgress ?? false,
+        adversarial: options.adversarial ?? false,
+      });
+      break;
+
+    case 'dfs':
+      actions = await invokeWasmSolver('dfs_solve', {
+        status,
+        depth: options.depth ?? 6,
+        specialist: options.specialist ?? false,
+      });
+      break;
+
+    case 'nq':
+      actions = await invokeWasmSolver('nq_solve', {
+        status,
+        depth: options.depth ?? 6,
+        specialist: options.specialist ?? false,
+      });
+      break;
+
+    case 'reflect':
+      actions = await invokeWasmSolver('reflect_solve', {
+        status,
+        useObserve: options.useObserve ?? false,
+      });
+      break;
+
+    default:
+      throw new Error(`Unknown solver type: ${solver}`);
+  }
+
+  // Simulate to get final status
+  const result = await simulate(status, actions);
+
+  return {
+    actions,
+    solver,
+    finalStatus: result.status,
+  };
 }

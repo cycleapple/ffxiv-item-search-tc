@@ -29,8 +29,7 @@ export function SolverPanel({ status, onSolverResult, disabled = false }: Solver
 
     try {
       // Import solver dynamically to avoid loading WASM until needed
-      // Use main thread solve instead of worker for better compatibility
-      const { solve } = await import('../../services/craftingWasm');
+      const { solveInWorker } = await import('../../services/craftingWasm');
 
       const options: SolverOptions = {
         depth,
@@ -43,7 +42,7 @@ export function SolverPanel({ status, onSolverResult, disabled = false }: Solver
         specialist: false,
       };
 
-      const result = await solve(status, solverType, options);
+      const result = await solveInWorker(status, solverType, options);
       onSolverResult(result.actions);
     } catch (err) {
       setError(err instanceof Error ? err.message : '求解失敗');
