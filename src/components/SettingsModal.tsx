@@ -15,7 +15,6 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     setCrafterStats,
     moveTabUp,
     moveTabDown,
-    resetSettings,
     setTabOrder,
   } = useSettings();
 

@@ -54,7 +54,7 @@ const ACTION_NAMES_SHORT: Record<CraftingAction, string> = {
 
 // Get action color based on type
 function getActionColor(action: CraftingAction): string {
-  const synthActions = [
+  const synthActions: Set<CraftingAction> = new Set([
     CraftingAction.BasicSynthesis,
     CraftingAction.RapidSynthesis,
     CraftingAction.CarefulSynthesis,
@@ -63,9 +63,9 @@ function getActionColor(action: CraftingAction): string {
     CraftingAction.IntensiveSynthesis,
     CraftingAction.MuscleMemory,
     CraftingAction.DelicateSynthesis,
-  ];
+  ]);
 
-  const touchActions = [
+  const touchActions: Set<CraftingAction> = new Set([
     CraftingAction.BasicTouch,
     CraftingAction.HastyTouch,
     CraftingAction.StandardTouch,
@@ -79,9 +79,9 @@ function getActionColor(action: CraftingAction): string {
     CraftingAction.ByregotsBlessing,
     CraftingAction.Reflect,
     CraftingAction.TrainedEye,
-  ];
+  ]);
 
-  const buffActions = [
+  const buffActions: Set<CraftingAction> = new Set([
     CraftingAction.Veneration,
     CraftingAction.Innovation,
     CraftingAction.GreatStrides,
@@ -92,17 +92,17 @@ function getActionColor(action: CraftingAction): string {
     CraftingAction.QuickInnovation,
     CraftingAction.TrainedPerfection,
     CraftingAction.HeartAndSoul,
-  ];
+  ]);
 
-  const repairActions = [
+  const repairActions: Set<CraftingAction> = new Set([
     CraftingAction.MastersMend,
     CraftingAction.ImmaculateMend,
-  ];
+  ]);
 
-  if (synthActions.includes(action)) return 'bg-blue-600/30 border-blue-500';
-  if (touchActions.includes(action)) return 'bg-orange-600/30 border-orange-500';
-  if (buffActions.includes(action)) return 'bg-green-600/30 border-green-500';
-  if (repairActions.includes(action)) return 'bg-yellow-600/30 border-yellow-500';
+  if (synthActions.has(action)) return 'bg-blue-600/30 border-blue-500';
+  if (touchActions.has(action)) return 'bg-orange-600/30 border-orange-500';
+  if (buffActions.has(action)) return 'bg-green-600/30 border-green-500';
+  if (repairActions.has(action)) return 'bg-yellow-600/30 border-yellow-500';
   return 'bg-gray-600/30 border-gray-500';
 }
 

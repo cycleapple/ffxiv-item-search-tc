@@ -204,8 +204,8 @@ export function CraftingSimulator() {
   }
 
   const rotationActions = rotation.map((slot) => slot.action);
-  const isComplete = craftingStatus && craftingStatus.progress >= craftingStatus.recipe.difficulty;
-  const isFailed = craftingStatus && craftingStatus.durability <= 0 && !isComplete;
+  const isComplete = !!(craftingStatus && craftingStatus.progress >= craftingStatus.recipe.difficulty);
+  const isFailed = !!(craftingStatus && craftingStatus.durability <= 0 && !isComplete);
 
   return (
     <div className="space-y-4">

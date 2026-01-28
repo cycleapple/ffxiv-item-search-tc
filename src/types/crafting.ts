@@ -36,11 +36,12 @@ export interface CraftingRecipe {
 }
 
 // Limited action state (for Heart and Soul, Trained Perfection)
-export enum LimitedActionState {
-  Unused = 'Unused',
-  Active = 'Active',
-  Used = 'Used',
-}
+export const LimitedActionState = {
+  Unused: 'Unused',
+  Active: 'Active',
+  Used: 'Used',
+} as const;
+export type LimitedActionState = typeof LimitedActionState[keyof typeof LimitedActionState];
 
 // Buff state
 export interface CraftingBuffs {
@@ -62,18 +63,19 @@ export interface CraftingBuffs {
 }
 
 // Crafting condition (球色)
-export enum CraftingCondition {
-  Normal = 'Normal',       // 白：通常
-  Good = 'Good',           // 紅：高品質
-  Excellent = 'Excellent', // 彩：最高品質
-  Poor = 'Poor',           // 黑：低品質
-  Centered = 'Centered',   // 黃：成功率+25%
-  Sturdy = 'Sturdy',       // 藍：耐久消耗-50%
-  Pliant = 'Pliant',       // 綠：CP消耗-50%
-  Malleable = 'Malleable', // 深藍：作業效率1.5倍
-  Primed = 'Primed',       // 紫：技能持續+2回合
-  GoodOmen = 'GoodOmen',   // 粉：下回合必為紅球
-}
+export const CraftingCondition = {
+  Normal: 'Normal',       // 白：通常
+  Good: 'Good',           // 紅：高品質
+  Excellent: 'Excellent', // 彩：最高品質
+  Poor: 'Poor',           // 黑：低品質
+  Centered: 'Centered',   // 黃：成功率+25%
+  Sturdy: 'Sturdy',       // 藍：耐久消耗-50%
+  Pliant: 'Pliant',       // 綠：CP消耗-50%
+  Malleable: 'Malleable', // 深藍：作業效率1.5倍
+  Primed: 'Primed',       // 紫：技能持續+2回合
+  GoodOmen: 'GoodOmen',   // 粉：下回合必為紅球
+} as const;
+export type CraftingCondition = typeof CraftingCondition[keyof typeof CraftingCondition];
 
 // Crafting status (current simulation state)
 export interface CraftingStatus {
@@ -90,62 +92,63 @@ export interface CraftingStatus {
 }
 
 // Crafting actions (技能)
-export enum CraftingAction {
+export const CraftingAction = {
   // Basic actions
-  BasicSynthesis = 'basic_synthesis',
-  BasicTouch = 'basic_touch',
-  MastersMend = 'masters_mend',
+  BasicSynthesis: 'basic_synthesis',
+  BasicTouch: 'basic_touch',
+  MastersMend: 'masters_mend',
 
   // Touch actions
-  HastyTouch = 'hasty_touch',
-  StandardTouch = 'standard_touch',
-  AdvancedTouch = 'advanced_touch',
-  PrudentTouch = 'prudent_touch',
-  PreparatoryTouch = 'preparatory_touch',
-  PreciseTouch = 'precise_touch',
-  TrainedFinesse = 'trained_finesse',
-  RefinedTouch = 'refined_touch',
-  DaringTouch = 'daring_touch',
+  HastyTouch: 'hasty_touch',
+  StandardTouch: 'standard_touch',
+  AdvancedTouch: 'advanced_touch',
+  PrudentTouch: 'prudent_touch',
+  PreparatoryTouch: 'preparatory_touch',
+  PreciseTouch: 'precise_touch',
+  TrainedFinesse: 'trained_finesse',
+  RefinedTouch: 'refined_touch',
+  DaringTouch: 'daring_touch',
 
   // Synthesis actions
-  RapidSynthesis = 'rapid_synthesis',
-  CarefulSynthesis = 'careful_synthesis',
-  Groundwork = 'groundwork',
-  PrudentSynthesis = 'prudent_synthesis',
-  IntensiveSynthesis = 'intensive_synthesis',
-  DelicateSynthesis = 'delicate_synthesis',
+  RapidSynthesis: 'rapid_synthesis',
+  CarefulSynthesis: 'careful_synthesis',
+  Groundwork: 'groundwork',
+  PrudentSynthesis: 'prudent_synthesis',
+  IntensiveSynthesis: 'intensive_synthesis',
+  DelicateSynthesis: 'delicate_synthesis',
 
   // Buff actions
-  Observe = 'observe',
-  TricksOfTheTrade = 'tricks_of_the_trade',
-  WasteNot = 'waste_not',
-  WasteNotII = 'waste_not_ii',
-  Veneration = 'veneration',
-  GreatStrides = 'great_strides',
-  Innovation = 'innovation',
-  FinalAppraisal = 'final_appraisal',
-  Manipulation = 'manipulation',
+  Observe: 'observe',
+  TricksOfTheTrade: 'tricks_of_the_trade',
+  WasteNot: 'waste_not',
+  WasteNotII: 'waste_not_ii',
+  Veneration: 'veneration',
+  GreatStrides: 'great_strides',
+  Innovation: 'innovation',
+  FinalAppraisal: 'final_appraisal',
+  Manipulation: 'manipulation',
 
   // Opening actions
-  MuscleMemory = 'muscle_memory',
-  Reflect = 'reflect',
-  TrainedEye = 'trained_eye',
+  MuscleMemory: 'muscle_memory',
+  Reflect: 'reflect',
+  TrainedEye: 'trained_eye',
 
   // Special actions
-  ByregotsBlessing = 'byregot_s_blessing',
-  CarefulObservation = 'careful_observation',
-  HeartAndSoul = 'heart_and_soul',
+  ByregotsBlessing: 'byregot_s_blessing',
+  CarefulObservation: 'careful_observation',
+  HeartAndSoul: 'heart_and_soul',
 
   // 7.0 actions
-  ImmaculateMend = 'immaculate_mend',
-  QuickInnovation = 'quick_innovation',
-  TrainedPerfection = 'trained_perfection',
+  ImmaculateMend: 'immaculate_mend',
+  QuickInnovation: 'quick_innovation',
+  TrainedPerfection: 'trained_perfection',
 
   // Fail variants (for simulation display)
-  RapidSynthesisFail = 'rapid_synthesis_fail',
-  HastyTouchFail = 'hasty_touch_fail',
-  DaringTouchFail = 'daring_touch_fail',
-}
+  RapidSynthesisFail: 'rapid_synthesis_fail',
+  HastyTouchFail: 'hasty_touch_fail',
+  DaringTouchFail: 'daring_touch_fail',
+} as const;
+export type CraftingAction = typeof CraftingAction[keyof typeof CraftingAction];
 
 // Action categories for display
 export const ACTION_CATEGORIES = {
@@ -298,16 +301,17 @@ export interface RotationSlot {
 }
 
 // Jobs
-export enum CraftingJob {
-  Carpenter = 'carpenter',
-  Blacksmith = 'blacksmith',
-  Armorer = 'armorer',
-  Goldsmith = 'goldsmith',
-  Leatherworker = 'leatherworker',
-  Weaver = 'weaver',
-  Alchemist = 'alchemist',
-  Culinarian = 'culinarian',
-}
+export const CraftingJob = {
+  Carpenter: 'carpenter',
+  Blacksmith: 'blacksmith',
+  Armorer: 'armorer',
+  Goldsmith: 'goldsmith',
+  Leatherworker: 'leatherworker',
+  Weaver: 'weaver',
+  Alchemist: 'alchemist',
+  Culinarian: 'culinarian',
+} as const;
+export type CraftingJob = typeof CraftingJob[keyof typeof CraftingJob];
 
 // Job ID to Job mapping
 export const CRAFT_TYPE_TO_JOB: Record<number, CraftingJob> = {

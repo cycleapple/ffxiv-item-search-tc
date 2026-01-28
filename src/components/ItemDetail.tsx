@@ -11,7 +11,7 @@ import { CraftingPriceTree } from './CraftingPriceTree';
 import { UsedForView } from './UsedForView';
 import { CopyButton } from './CopyButton';
 import { EquipmentStatsView } from './EquipmentStatsView';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useSettings, type TabType } from '../hooks/useSettings';
 import type { Item, Recipe, GatheringPoint, ItemSource } from '../types';
 
