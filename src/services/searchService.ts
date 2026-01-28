@@ -106,10 +106,23 @@ export function searchItems(filters: SearchFilters, limit = 100): SearchResultWi
       // Check multilingual names
       const multiNames = multilingualNames[id];
       if (multiNames) {
-        if ((multiNames.en && multiNames.en.toLowerCase().normalize('NFC').includes(query)) ||
-            (multiNames.ja && multiNames.ja.toLowerCase().normalize('NFC').includes(query)) ||
-            (multiNames.cn && multiNames.cn.toLowerCase().normalize('NFC').includes(query))) {
+        const enMatch = multiNames.en && multiNames.en.toLowerCase().normalize('NFC').includes(query);
+        const jaMatch = multiNames.ja && multiNames.ja.toLowerCase().normalize('NFC').includes(query);
+        const cnMatch = multiNames.cn && multiNames.cn.toLowerCase().normalize('NFC').includes(query);
+
+        if (enMatch || jaMatch || cnMatch) {
           results.push(item);
+        }
+
+        // Debug logging for item 36374 (orchestrion roll)
+        if (id === 36374 || item.name.includes('昏暗')) {
+          console.log('Debug search for item', id, item.name);
+          console.log('  Query:', query, 'hex:', Array.from(query).map(c => c.charCodeAt(0).toString(16)).join(' '));
+          console.log('  JA name:', multiNames.ja);
+          if (multiNames.ja) {
+            console.log('  JA hex:', Array.from(multiNames.ja).map(c => c.charCodeAt(0).toString(16)).join(' '));
+            console.log('  JA match:', jaMatch);
+          }
         }
       }
     }
