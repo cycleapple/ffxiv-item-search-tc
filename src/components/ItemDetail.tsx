@@ -248,7 +248,7 @@ export function ItemDetail() {
       )}
 
       {/* Food Effects */}
-      {item.foodEffects && (
+      {item.foodEffects && item.foodEffects.bonuses && item.foodEffects.bonuses.length > 0 && (
         <div className="mb-6">
           <FoodEffectsView
             foodEffects={item.foodEffects}

@@ -30,10 +30,28 @@ export const DEFAULT_CRAFTER_STATS: CrafterAttributes = {
   craft_points: 700,
 };
 
+// Crafting consumable settings
+export interface CraftingConsumables {
+  foodId: number | null;      // Selected food item ID
+  foodHq: boolean;            // Is food HQ
+  medicineId: number | null;  // Selected medicine item ID
+  medicineHq: boolean;        // Is medicine HQ
+  specialist: boolean;        // Specialist bonus enabled
+}
+
+export const DEFAULT_CRAFTING_CONSUMABLES: CraftingConsumables = {
+  foodId: null,
+  foodHq: true,
+  medicineId: null,
+  medicineHq: true,
+  specialist: false,
+};
+
 // Settings interface
 export interface Settings {
   crafterStats: CrafterAttributes;
   tabOrder: TabConfig[];
+  craftingConsumables: CraftingConsumables;
 }
 
 const SETTINGS_KEY = 'ffxiv-item-search-settings';
@@ -47,6 +65,7 @@ function loadSettings(): Settings {
       return {
         crafterStats: { ...DEFAULT_CRAFTER_STATS, ...parsed.crafterStats },
         tabOrder: parsed.tabOrder || DEFAULT_TAB_ORDER,
+        craftingConsumables: { ...DEFAULT_CRAFTING_CONSUMABLES, ...parsed.craftingConsumables },
       };
     }
   } catch (e) {
@@ -55,6 +74,7 @@ function loadSettings(): Settings {
   return {
     crafterStats: DEFAULT_CRAFTER_STATS,
     tabOrder: DEFAULT_TAB_ORDER,
+    craftingConsumables: DEFAULT_CRAFTING_CONSUMABLES,
   };
 }
 
@@ -84,6 +104,14 @@ export function useSettings() {
     setSettings(prev => ({ ...prev, tabOrder }));
   }, []);
 
+  // Update crafting consumables
+  const setCraftingConsumables = useCallback((consumables: Partial<CraftingConsumables>) => {
+    setSettings(prev => ({
+      ...prev,
+      craftingConsumables: { ...prev.craftingConsumables, ...consumables },
+    }));
+  }, []);
+
   // Move tab up in order
   const moveTabUp = useCallback((index: number) => {
     if (index <= 0) return;
@@ -109,6 +137,7 @@ export function useSettings() {
     setSettings({
       crafterStats: DEFAULT_CRAFTER_STATS,
       tabOrder: DEFAULT_TAB_ORDER,
+      craftingConsumables: DEFAULT_CRAFTING_CONSUMABLES,
     });
   }, []);
 
@@ -122,8 +151,10 @@ export function useSettings() {
     settings,
     crafterStats: settings.crafterStats,
     tabOrder: settings.tabOrder,
+    craftingConsumables: settings.craftingConsumables,
     setCrafterStats,
     setTabOrder,
+    setCraftingConsumables,
     moveTabUp,
     moveTabDown,
     resetSettings,

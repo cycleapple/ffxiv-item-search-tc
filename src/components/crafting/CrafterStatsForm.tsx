@@ -3,11 +3,17 @@ import type { CrafterAttributes } from '../../types/crafting';
 
 interface CrafterStatsFormProps {
   stats: CrafterAttributes;
+  effectiveStats?: { craftsmanship: number; control: number; craft_points: number };
   onStatsChange: (stats: Partial<CrafterAttributes>) => void;
   onReset: () => void;
 }
 
-export function CrafterStatsForm({ stats, onStatsChange, onReset }: CrafterStatsFormProps) {
+export function CrafterStatsForm({ stats, effectiveStats, onStatsChange, onReset }: CrafterStatsFormProps) {
+  // Calculate bonuses
+  const craftBonus = effectiveStats ? effectiveStats.craftsmanship - stats.craftsmanship : 0;
+  const controlBonus = effectiveStats ? effectiveStats.control - stats.control : 0;
+  const cpBonus = effectiveStats ? effectiveStats.craft_points - stats.craft_points : 0;
+
   return (
     <div className="bg-[var(--ffxiv-card)] rounded-lg p-4 border border-[var(--ffxiv-border)]">
       <div className="flex items-center justify-between mb-3">
@@ -45,6 +51,9 @@ export function CrafterStatsForm({ stats, onStatsChange, onReset }: CrafterStats
             onChange={(e) => onStatsChange({ craftsmanship: parseInt(e.target.value) || 0 })}
             className="flex-1 bg-[var(--ffxiv-bg)] border border-[var(--ffxiv-border)] rounded px-2 py-1 text-sm text-[var(--ffxiv-text)] focus:outline-none focus:border-[var(--ffxiv-accent)]"
           />
+          {craftBonus > 0 && (
+            <span className="text-xs text-[var(--ffxiv-success)]">+{craftBonus}</span>
+          )}
         </div>
 
         {/* Control */}
@@ -58,6 +67,9 @@ export function CrafterStatsForm({ stats, onStatsChange, onReset }: CrafterStats
             onChange={(e) => onStatsChange({ control: parseInt(e.target.value) || 0 })}
             className="flex-1 bg-[var(--ffxiv-bg)] border border-[var(--ffxiv-border)] rounded px-2 py-1 text-sm text-[var(--ffxiv-text)] focus:outline-none focus:border-[var(--ffxiv-accent)]"
           />
+          {controlBonus > 0 && (
+            <span className="text-xs text-[var(--ffxiv-success)]">+{controlBonus}</span>
+          )}
         </div>
 
         {/* CP */}
@@ -71,6 +83,9 @@ export function CrafterStatsForm({ stats, onStatsChange, onReset }: CrafterStats
             onChange={(e) => onStatsChange({ craft_points: parseInt(e.target.value) || 0 })}
             className="flex-1 bg-[var(--ffxiv-bg)] border border-[var(--ffxiv-border)] rounded px-2 py-1 text-sm text-[var(--ffxiv-text)] focus:outline-none focus:border-[var(--ffxiv-accent)]"
           />
+          {cpBonus > 0 && (
+            <span className="text-xs text-[var(--ffxiv-success)]">+{cpBonus}</span>
+          )}
         </div>
       </div>
     </div>

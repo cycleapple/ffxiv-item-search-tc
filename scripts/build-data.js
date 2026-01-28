@@ -275,15 +275,15 @@ async function processItems() {
   });
   console.log(`Loaded ${itemFoodMap.size} food effects`);
 
-  // Build ItemAction -> ItemFood map (for food types 844=food, 845=medicine)
+  // Build ItemAction -> ItemFood map (for food types 844=food, 845=medicine, 846=crafting medicine)
   // ItemAction Data[1] contains the ItemFood ID for these types
   const itemActionToFoodMap = new Map();
   itemActions.forEach((action) => {
     const id = parseInt(action['#'] || action.key || '0');
     const type = parseInt(action['Type'] || '0');
 
-    // Type 844 = food, Type 845 = medicine (both use ItemFood)
-    if (type === 844 || type === 845) {
+    // Type 844 = food, Type 845 = medicine, Type 846 = crafting medicine/syrup
+    if (type === 844 || type === 845 || type === 846) {
       const itemFoodId = parseInt(action['Data[1]'] || '0');
       if (itemFoodId > 0 && itemFoodMap.has(itemFoodId)) {
         itemActionToFoodMap.set(id, itemFoodId);

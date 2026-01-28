@@ -12,9 +12,12 @@ import type {
 import { getItemById, getRecipesForItem } from '../../services/searchService';
 import { getItemIconUrl } from '../../services/xivapiService';
 import { useCrafterStats } from '../../hooks/useCrafterStats';
+import { useSettings } from '../../hooks/useSettings';
+import { useItemData } from '../../hooks/useItemData';
 import { createStatus, simulate } from '../../services/craftingWasm';
 
 import { CrafterStatsForm } from './CrafterStatsForm';
+import { ConsumableSelector, calculateEffectiveStats } from './ConsumableSelector';
 import { StatusDisplay } from './StatusDisplay';
 import { ActionPalette } from './ActionPalette';
 import { RotationBuilder } from './RotationBuilder';
@@ -57,6 +60,13 @@ export function CraftingSimulator() {
   const { itemId } = useParams<{ itemId: string }>();
   const navigate = useNavigate();
   const { stats, setStats, resetStats } = useCrafterStats();
+  const { craftingConsumables, setCraftingConsumables } = useSettings();
+  const { items, loading: itemsLoading } = useItemData();
+
+  // Calculate effective stats with consumables (only if items are loaded)
+  const effectiveStats = itemsLoading
+    ? { craftsmanship: stats.craftsmanship, control: stats.control, craft_points: stats.craft_points }
+    : calculateEffectiveStats(stats, craftingConsumables, items);
 
   // Data loading state
   const [item, setItem] = useState<Item | null>(null);
@@ -125,7 +135,15 @@ export function CraftingSimulator() {
         }
 
         const craftingRecipe = convertRecipe(recipe, recipeLevel);
-        const status = await createStatus(stats, craftingRecipe);
+        // Use effective stats (with consumable bonuses applied)
+        const crafterAttrs = {
+          level: stats.level || 100,
+          craftsmanship: effectiveStats.craftsmanship || 0,
+          control: effectiveStats.control || 0,
+          craft_points: effectiveStats.craft_points || 0,
+        };
+        console.log('Creating status with:', crafterAttrs, craftingRecipe);
+        const status = await createStatus(crafterAttrs, craftingRecipe);
 
         setInitialStatus(status);
         setCraftingStatus(status);
@@ -133,12 +151,13 @@ export function CraftingSimulator() {
         setNextSlotId(1);
         setSimulationError(null);
       } catch (err) {
+        console.error('Crafting init error:', err);
         setSimulationError(err instanceof Error ? err.message : '初始化失敗');
       }
     };
 
     initStatus();
-  }, [recipe, recipeLevels, stats]);
+  }, [recipe, recipeLevels, stats.level, effectiveStats.craftsmanship, effectiveStats.control, effectiveStats.craft_points, itemsLoading]);
 
   // Re-simulate when rotation changes
   useEffect(() => {
@@ -285,8 +304,13 @@ export function CraftingSimulator() {
         <div className="space-y-4">
           <CrafterStatsForm
             stats={stats}
+            effectiveStats={effectiveStats}
             onStatsChange={setStats}
             onReset={resetStats}
+          />
+          <ConsumableSelector
+            consumables={craftingConsumables}
+            onChange={setCraftingConsumables}
           />
           <StatusDisplay status={craftingStatus} />
         </div>
