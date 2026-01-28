@@ -1793,10 +1793,11 @@ async function processMultilingualNames() {
       }
 
       const nameIndex = headers.indexOf('Name');
+      const singularIndex = headers.indexOf('Singular');
       const idIndex = headers.indexOf('#');
 
-      if (nameIndex === -1 || idIndex === -1) {
-        console.warn(`Could not find Name or # column in ${lang} CSV (headers: ${headers.slice(0, 10).join(', ')}...)`);
+      if (idIndex === -1 || (nameIndex === -1 && singularIndex === -1)) {
+        console.warn(`Could not find required columns in ${lang} CSV (headers: ${headers.slice(0, 10).join(', ')}...)`);
         return new Map();
       }
 
@@ -1804,6 +1805,9 @@ async function processMultilingualNames() {
       for (let i = dataStartLine; i < lines.length; i++) {
         const line = lines[i].trim();
         if (!line) continue;
+
+        // Skip lines that appear to be continuations of multiline fields
+        if (!line.match(/^\d+,/)) continue;
 
         // Parse CSV line handling quoted strings
         const values = [];
@@ -1822,7 +1826,13 @@ async function processMultilingualNames() {
         values.push(current);
 
         const id = parseInt(values[idIndex] || '0');
-        const name = (values[nameIndex] || '').trim();
+        // Try Name column first, fall back to Singular column
+        let name = (nameIndex !== -1 ? values[nameIndex] : '') || '';
+        if (!name.trim() && singularIndex !== -1) {
+          name = values[singularIndex] || '';
+        }
+        name = name.trim();
+
         if (id > 0 && name) {
           names.set(id, name);
         }
