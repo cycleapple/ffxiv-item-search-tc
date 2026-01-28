@@ -19,6 +19,50 @@ const RARITY_OPTIONS = [
   { value: 7, label: '粉色' },
 ];
 
+// Category groups for organized dropdown
+const CATEGORY_GROUPS: { name: string; ids: number[] }[] = [
+  {
+    name: '武器',
+    ids: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 84, 87, 88, 89, 96, 97, 98, 105, 106, 107, 108, 109, 110, 111],
+  },
+  {
+    name: '防具',
+    ids: [11, 34, 35, 36, 37, 38],
+  },
+  {
+    name: '飾品',
+    ids: [40, 41, 42, 43],
+  },
+  {
+    name: '製作工具',
+    ids: [12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27],
+  },
+  {
+    name: '採集工具',
+    ids: [28, 29, 30, 31, 32, 99],
+  },
+  {
+    name: '素材',
+    ids: [45, 47, 48, 49, 50, 51, 52, 53, 54, 59, 60],
+  },
+  {
+    name: '消耗品',
+    ids: [33, 44, 46, 55, 56, 58, 83],
+  },
+  {
+    name: '房屋相關',
+    ids: [57, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80],
+  },
+  {
+    name: '載具部件',
+    ids: [90, 91, 92, 93, 101, 102, 103, 104],
+  },
+  {
+    name: '其他',
+    ids: [39, 61, 62, 63, 81, 82, 85, 86, 94, 95, 100, 112],
+  },
+];
+
 // Job data for icons - use abbreviation for garlandtools
 const JOB_CATEGORIES = [
   {
@@ -179,11 +223,20 @@ export function FilterPanel({ filters, categories, onFilterChange, onReset }: Fi
               className="w-full bg-[var(--ffxiv-bg-tertiary)] border border-[var(--ffxiv-border)] rounded px-3 py-1.5 text-sm text-[var(--ffxiv-text)] focus:outline-none focus:border-[var(--ffxiv-accent)] cursor-pointer"
             >
               <option value="">全部分類</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
+              {CATEGORY_GROUPS.map((group) => {
+                // Filter to only include categories that exist in the data
+                const groupCategories = categories.filter(cat => group.ids.includes(cat.id));
+                if (groupCategories.length === 0) return null;
+                return (
+                  <optgroup key={group.name} label={group.name}>
+                    {groupCategories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                );
+              })}
             </select>
           </div>
 
