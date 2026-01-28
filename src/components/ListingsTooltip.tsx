@@ -1,5 +1,6 @@
 // Tooltip component showing recent market listings
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import type { ListingInfo } from '../types';
 import { formatPrice } from '../services/universalisApi';
 
@@ -78,10 +79,10 @@ export function ListingsTooltip({ listings, children }: ListingsTooltipProps) {
         {children}
       </div>
 
-      {isVisible && (
+      {isVisible && createPortal(
         <div
           ref={tooltipRef}
-          className="fixed z-50 bg-[var(--ffxiv-bg-secondary)] border border-[var(--ffxiv-border)] rounded-lg shadow-lg p-3 min-w-[280px] max-w-[360px]"
+          className="fixed z-[9999] bg-[var(--ffxiv-bg-secondary)] border border-[var(--ffxiv-border)] rounded-lg shadow-lg p-3 min-w-[280px] max-w-[360px]"
           style={{
             left: position.x,
             top: position.y,
@@ -124,7 +125,8 @@ export function ListingsTooltip({ listings, children }: ListingsTooltipProps) {
               ))}
             </tbody>
           </table>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
