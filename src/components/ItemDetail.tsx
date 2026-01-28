@@ -1,5 +1,5 @@
 // Item detail page component
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useItemData, useRecipeData, useGatheringData, useSourcesData, getRecipesUsingItem } from '../hooks/useItemData';
 import { getItemById } from '../services/searchService';
 import { getItemIconUrl } from '../services/xivapiService';
@@ -55,6 +55,7 @@ function cleanFFXIVText(text: string): string {
 export function ItemDetail() {
   const { id } = useParams<{ id: string }>();
   const itemId = id ? parseInt(id) : null;
+  const navigate = useNavigate();
 
   const { loading: itemsLoading } = useItemData();
   const { recipes: recipesData } = useRecipeData();
@@ -100,12 +101,12 @@ export function ItemDetail() {
     return (
       <div className="text-center py-12">
         <div className="text-[var(--ffxiv-muted)] mb-4">找不到此物品</div>
-        <Link
-          to="/"
+        <button
+          onClick={() => navigate(-1)}
           className="text-[var(--ffxiv-accent)] hover:text-[var(--ffxiv-accent-hover)] hover:underline transition-colors"
         >
           返回搜尋
-        </Link>
+        </button>
       </div>
     );
   }
@@ -118,15 +119,15 @@ export function ItemDetail() {
   return (
     <div className="max-w-4xl mx-auto">
       {/* Back button */}
-      <Link
-        to="/"
+      <button
+        onClick={() => navigate(-1)}
         className="inline-flex items-center gap-1 text-sm text-[var(--ffxiv-muted)] hover:text-[var(--ffxiv-accent)] mb-4 transition-colors"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
         返回搜尋
-      </Link>
+      </button>
 
       {/* Item header */}
       <div className="bg-[var(--ffxiv-bg-secondary)] rounded-lg border border-[var(--ffxiv-border)] mb-6 overflow-hidden">

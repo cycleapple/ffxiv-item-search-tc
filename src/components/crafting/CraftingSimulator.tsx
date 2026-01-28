@@ -1,6 +1,6 @@
 // Main crafting simulator component
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import type { Item, Recipe } from '../../types';
 import type {
   CraftingStatus,
@@ -41,6 +41,7 @@ function convertRecipe(recipe: Recipe, recipeLevel: RecipeLevel): CraftingRecipe
 
 export function CraftingSimulator() {
   const { itemId } = useParams<{ itemId: string }>();
+  const navigate = useNavigate();
   const { stats, setStats, resetStats } = useCrafterStats();
 
   // Data loading state
@@ -193,12 +194,12 @@ export function CraftingSimulator() {
     return (
       <div className="text-center py-12">
         <div className="text-red-400 mb-4">{error}</div>
-        <Link
-          to="/"
+        <button
+          onClick={() => navigate(-1)}
           className="text-sm text-[var(--ffxiv-accent)] hover:underline"
         >
           返回搜尋
-        </Link>
+        </button>
       </div>
     );
   }
@@ -211,13 +212,13 @@ export function CraftingSimulator() {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link
-          to={item ? `/item/${item.id}` : '/'}
+        <button
+          onClick={() => navigate(-1)}
           className="text-[var(--ffxiv-accent)] hover:underline flex items-center gap-1"
         >
           <span>←</span>
           <span>返回</span>
-        </Link>
+        </button>
         <div className="flex items-center gap-3">
           {item && (
             <>

@@ -1,6 +1,6 @@
 // Price check list page component
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { usePriceCheckList } from '../hooks/usePriceCheckList';
 import { usePriceCheckListData, type QualityFilter } from '../hooks/usePriceCheckListData';
 import { PriceCheckListItemComponent } from './PriceCheckListItem';
@@ -9,6 +9,7 @@ import { PriceCheckTreeView } from './PriceCheckTreeView';
 type ViewMode = 'list' | 'tree';
 
 export function PriceCheckListPage() {
+  const navigate = useNavigate();
   const { list, removeItem, clearList } = usePriceCheckList();
   const [showCrystals, setShowCrystals] = useState(false);
   const [qualityFilter, setQualityFilter] = useState<QualityFilter>('both');
@@ -24,15 +25,15 @@ export function PriceCheckListPage() {
   return (
     <div className="max-w-5xl mx-auto">
       {/* Back button */}
-      <Link
-        to="/"
+      <button
+        onClick={() => navigate(-1)}
         className="inline-flex items-center gap-1 text-sm text-[var(--ffxiv-muted)] hover:text-[var(--ffxiv-accent)] mb-4 transition-colors"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
         返回搜尋
-      </Link>
+      </button>
 
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
