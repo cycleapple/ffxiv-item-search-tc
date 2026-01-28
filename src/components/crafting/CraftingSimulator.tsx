@@ -23,7 +23,7 @@ import { MacroExporter } from './MacroExporter';
 
 // Fetch recipe level data
 async function fetchRecipeLevels(): Promise<Record<number, RecipeLevel>> {
-  const response = await fetch('/ffxiv-item-search-tc/data/recipe-levels.json');
+  const response = await fetch(`${import.meta.env.BASE_URL}data/recipe-levels.json`);
   return response.json();
 }
 

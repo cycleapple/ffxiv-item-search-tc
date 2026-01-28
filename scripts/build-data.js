@@ -37,6 +37,9 @@ const ITEM_CSV_EN = 'https://raw.githubusercontent.com/xivapi/ffxiv-datamining/m
 const ITEM_CSV_JA = 'https://raw.githubusercontent.com/xivapi/ffxiv-datamining/master/csv/ja/Item.csv';
 const ITEM_CSV_CN = 'https://raw.githubusercontent.com/thewakingsands/ffxiv-datamining-cn/master/Item.csv';
 
+// Recipe level table for crafting simulator (from xivapi datamining - has more fields than TC repo)
+const RECIPE_LEVEL_TABLE_CSV = 'https://raw.githubusercontent.com/xivapi/ffxiv-datamining/master/csv/en/RecipeLevelTable.csv';
+
 // DataType enum from Teamcraft (for extracts.json)
 const DataType = {
   CRAFTED_BY: 1,
@@ -1877,6 +1880,76 @@ async function processMultilingualNames() {
 }
 
 /**
+ * Process recipe level table for crafting simulator
+ * Creates recipe-levels.json with all fields required by WASM simulator
+ */
+async function processRecipeLevels() {
+  console.log('Processing recipe level table...');
+
+  try {
+    const response = await fetch(RECIPE_LEVEL_TABLE_CSV);
+    if (!response.ok) {
+      console.warn(`Failed to fetch RecipeLevelTable.csv: ${response.status}`);
+      return;
+    }
+
+    const text = await response.text();
+    const lines = text.split('\n');
+    if (lines.length < 2) {
+      console.warn('RecipeLevelTable.csv is empty');
+      return;
+    }
+
+    // First line is headers
+    const headers = lines[0].split(',').map(h => h.trim());
+    const idIndex = headers.indexOf('#');
+    const qualityIndex = headers.indexOf('Quality');
+    const suggestedCraftsmanshipIndex = headers.indexOf('SuggestedCraftsmanship');
+    const difficultyIndex = headers.indexOf('Difficulty');
+    const durabilityIndex = headers.indexOf('Durability');
+    const conditionsFlagIndex = headers.indexOf('ConditionsFlag');
+    const classJobLevelIndex = headers.indexOf('ClassJobLevel');
+    const starsIndex = headers.indexOf('Stars');
+    const progressDividerIndex = headers.indexOf('ProgressDivider');
+    const qualityDividerIndex = headers.indexOf('QualityDivider');
+    const progressModifierIndex = headers.indexOf('ProgressModifier');
+    const qualityModifierIndex = headers.indexOf('QualityModifier');
+
+    const recipeLevels = {};
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+
+      const values = line.split(',');
+      const id = parseInt(values[idIndex] || '0');
+      if (id < 0) continue;
+
+      // Build recipe level object with snake_case keys to match WASM expectations
+      recipeLevels[id] = {
+        id,
+        class_job_level: parseInt(values[classJobLevelIndex] || '0'),
+        stars: parseInt(values[starsIndex] || '0'),
+        suggested_craftsmanship: parseInt(values[suggestedCraftsmanshipIndex] || '0'),
+        suggested_control: null, // Not in CSV but required by WASM (accepts null)
+        difficulty: parseInt(values[difficultyIndex] || '0'),
+        quality: parseInt(values[qualityIndex] || '0'),
+        progress_divider: parseInt(values[progressDividerIndex] || '50'),
+        quality_divider: parseInt(values[qualityDividerIndex] || '30'),
+        progress_modifier: parseInt(values[progressModifierIndex] || '100'),
+        quality_modifier: parseInt(values[qualityModifierIndex] || '100'),
+        durability: parseInt(values[durabilityIndex] || '40'),
+        conditions_flag: parseInt(values[conditionsFlagIndex] || '15'),
+      };
+    }
+
+    writeFileSync(join(OUTPUT_PATH, 'recipe-levels.json'), JSON.stringify(recipeLevels));
+    console.log(`Processed ${Object.keys(recipeLevels).length} recipe level entries`);
+  } catch (error) {
+    console.warn('Error processing recipe levels:', error.message);
+  }
+}
+
+/**
  * Main function
  */
 async function main() {
@@ -1903,6 +1976,7 @@ async function main() {
     await processQuestCNNames();
     await processInstanceCNNames();
     await processMultilingualNames();
+    await processRecipeLevels();
     console.log('');
     console.log('Data processing complete!');
   } catch (error) {
