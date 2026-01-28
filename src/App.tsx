@@ -1,6 +1,6 @@
 // Main App component
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { SearchBar } from './components/SearchBar';
 import { FilterPanel } from './components/FilterPanel';
 import { ItemList } from './components/ItemList';
@@ -127,15 +127,8 @@ function Header({ onSettingsOpen }: { onSettingsOpen: () => void }) {
 }
 
 function AppContent() {
-  const [dataLoaded, setDataLoaded] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const { loading } = useItemData();
-
-  useEffect(() => {
-    if (!loading) {
-      setDataLoaded(true);
-    }
-  }, [loading]);
 
   return (
     <div className="min-h-screen bg-[var(--ffxiv-bg)] flex flex-col">
@@ -147,7 +140,7 @@ function AppContent() {
 
       {/* Main content */}
       <main className="max-w-6xl mx-auto px-4 py-6 flex-1 w-full">
-        {!dataLoaded && loading ? (
+        {loading ? (
           <div className="flex flex-col items-center justify-center py-12">
             <div className="animate-spin rounded-full h-10 w-10 border-3 border-[var(--ffxiv-border)] border-t-[var(--ffxiv-accent)] mb-4"></div>
             <div className="text-[var(--ffxiv-muted)]">載入物品資料中...</div>

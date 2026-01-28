@@ -21,10 +21,24 @@ import { RotationBuilder } from './RotationBuilder';
 import { SolverPanel } from './SolverPanel';
 import { MacroExporter } from './MacroExporter';
 
-// Fetch recipe level data
+// Cached recipe level data
+let cachedRecipeLevels: Record<number, RecipeLevel> | null = null;
+let recipeLevelsPromise: Promise<Record<number, RecipeLevel>> | null = null;
+
+// Fetch recipe level data with caching
 async function fetchRecipeLevels(): Promise<Record<number, RecipeLevel>> {
-  const response = await fetch(`${import.meta.env.BASE_URL}data/recipe-levels.json`);
-  return response.json();
+  if (cachedRecipeLevels) {
+    return cachedRecipeLevels;
+  }
+  if (recipeLevelsPromise) {
+    return recipeLevelsPromise;
+  }
+  recipeLevelsPromise = (async () => {
+    const response = await fetch(`${import.meta.env.BASE_URL}data/recipe-levels.json`);
+    cachedRecipeLevels = await response.json();
+    return cachedRecipeLevels!;
+  })();
+  return recipeLevelsPromise;
 }
 
 // Convert our Recipe type to CraftingRecipe format

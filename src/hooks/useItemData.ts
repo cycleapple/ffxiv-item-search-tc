@@ -183,16 +183,26 @@ async function loadAllData(): Promise<void> {
  * Hook to access item data
  */
 export function useItemData(): ItemData {
-  const [state, setState] = useState<ItemData>(globalItemData);
+  // If data is already loaded, return it directly without causing re-renders
+  const [state, setState] = useState<ItemData>(() =>
+    dataLoaded ? globalItemData : { ...globalItemData }
+  );
 
   useEffect(() => {
-    if (!dataLoaded && !loadingPromise) {
+    // Skip if data already loaded
+    if (dataLoaded) {
+      // Only update if state doesn't match (e.g., initial render had stale data)
+      if (state.loading !== globalItemData.loading) {
+        setState(globalItemData);
+      }
+      return;
+    }
+
+    if (!loadingPromise) {
       loadAllData().then(() => {
         setState({ ...globalItemData });
       });
-    } else if (dataLoaded) {
-      setState(globalItemData);
-    } else if (loadingPromise) {
+    } else {
       loadingPromise.then(() => {
         setState({ ...globalItemData });
       });
@@ -206,16 +216,23 @@ export function useItemData(): ItemData {
  * Hook to access recipe data
  */
 export function useRecipeData(): RecipeData {
-  const [state, setState] = useState<RecipeData>(globalRecipeData);
+  const [state, setState] = useState<RecipeData>(() =>
+    dataLoaded ? globalRecipeData : { ...globalRecipeData }
+  );
 
   useEffect(() => {
-    if (!dataLoaded && !loadingPromise) {
+    if (dataLoaded) {
+      if (state.loading !== globalRecipeData.loading) {
+        setState(globalRecipeData);
+      }
+      return;
+    }
+
+    if (!loadingPromise) {
       loadAllData().then(() => {
         setState({ ...globalRecipeData });
       });
-    } else if (dataLoaded) {
-      setState(globalRecipeData);
-    } else if (loadingPromise) {
+    } else {
       loadingPromise.then(() => {
         setState({ ...globalRecipeData });
       });
@@ -229,16 +246,23 @@ export function useRecipeData(): RecipeData {
  * Hook to access gathering data
  */
 export function useGatheringData(): GatheringData {
-  const [state, setState] = useState<GatheringData>(globalGatheringData);
+  const [state, setState] = useState<GatheringData>(() =>
+    dataLoaded ? globalGatheringData : { ...globalGatheringData }
+  );
 
   useEffect(() => {
-    if (!dataLoaded && !loadingPromise) {
+    if (dataLoaded) {
+      if (state.loading !== globalGatheringData.loading) {
+        setState(globalGatheringData);
+      }
+      return;
+    }
+
+    if (!loadingPromise) {
       loadAllData().then(() => {
         setState({ ...globalGatheringData });
       });
-    } else if (dataLoaded) {
-      setState(globalGatheringData);
-    } else if (loadingPromise) {
+    } else {
       loadingPromise.then(() => {
         setState({ ...globalGatheringData });
       });
@@ -252,16 +276,23 @@ export function useGatheringData(): GatheringData {
  * Hook to access sources data
  */
 export function useSourcesData(): SourcesData {
-  const [state, setState] = useState<SourcesData>(globalSourcesData);
+  const [state, setState] = useState<SourcesData>(() =>
+    dataLoaded ? globalSourcesData : { ...globalSourcesData }
+  );
 
   useEffect(() => {
-    if (!dataLoaded && !loadingPromise) {
+    if (dataLoaded) {
+      if (state.loading !== globalSourcesData.loading) {
+        setState(globalSourcesData);
+      }
+      return;
+    }
+
+    if (!loadingPromise) {
       loadAllData().then(() => {
         setState({ ...globalSourcesData });
       });
-    } else if (dataLoaded) {
-      setState(globalSourcesData);
-    } else if (loadingPromise) {
+    } else {
       loadingPromise.then(() => {
         setState({ ...globalSourcesData });
       });
