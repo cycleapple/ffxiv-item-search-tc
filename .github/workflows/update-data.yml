@@ -1,0 +1,53 @@
+name: Update Item Data
+
+on:
+  schedule:
+    # Run every week on Monday at 00:00 UTC
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Checkout ffxiv-datamining-tc
+        uses: actions/checkout@v4
+        with:
+          repository: miaki3457/ffxiv-datamining-tc
+          path: ffxiv-datamining-tc
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Process data
+        run: DATA_REPO_PATH=./ffxiv-datamining-tc npm run build:data
+
+      - name: Check for changes
+        id: check
+        run: |
+          if git diff --quiet public/data/; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and push if changed
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add public/data/
+          git commit -m "Update item data from ffxiv-datamining-tc"
+          git push

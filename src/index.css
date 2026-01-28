@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+/* === CSS Variables - 匹配工具箱系列風格 === */
+:root {
+  /* 背景色 */
+  --ffxiv-bg: #333;
+  --ffxiv-bg-secondary: #222;
+  --ffxiv-bg-tertiary: #191919;
+  --ffxiv-card: #282828;
+  --ffxiv-card-hover: #363636;
+
+  /* 文字色 */
+  --ffxiv-text: #eee;
+  --ffxiv-text-secondary: #ccc;
+  --ffxiv-muted: #888;
+
+  /* 強調色 */
+  --ffxiv-accent: #5C6E8E;
+  --ffxiv-accent-hover: #6d7f9f;
+  --ffxiv-highlight: #917D54;
+  --ffxiv-success: #5a9c69;
+  --ffxiv-warning: #d4a84b;
+  --ffxiv-error: #dc3545;
+
+  /* 邊框與陰影 */
+  --ffxiv-border: #191919;
+  --ffxiv-shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  --ffxiv-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+}
+
+@theme {
+  --color-ffxiv-bg: var(--ffxiv-bg);
+  --color-ffxiv-card: var(--ffxiv-card);
+  --color-ffxiv-accent: var(--ffxiv-accent);
+  --color-ffxiv-highlight: var(--ffxiv-highlight);
+  --color-ffxiv-text: var(--ffxiv-text);
+  --color-ffxiv-muted: var(--ffxiv-muted);
+}
+
+body {
+  margin: 0;
+  font-family: 'Noto Sans TC', 'Segoe UI', 'Microsoft JhengHei', -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--ffxiv-bg);
+  color: var(--ffxiv-text);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--ffxiv-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--ffxiv-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ffxiv-muted);
+}
+
+/* Item rarity colors */
+.rarity-common { color: #ffffff; }
+.rarity-uncommon { color: #9cff9c; }
+.rarity-rare { color: #5b8fff; }
+.rarity-relic { color: #c88cff; }
+.rarity-aetherial { color: #ff8ce7; }

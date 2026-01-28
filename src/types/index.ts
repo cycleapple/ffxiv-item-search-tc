@@ -1,0 +1,249 @@
+// Item types
+export interface Item {
+  id: number;
+  name: string;
+  description: string;
+  icon: number;
+  itemLevel: number;
+  equipLevel: number;
+  rarity: number;
+  categoryId: number;
+  categoryName: string;
+  canBeHq: boolean;
+  stackSize: number;
+  isUntradable: boolean;
+  classJobCategory?: number;
+  // Flags for quick filtering
+  isCraftable?: boolean;
+  isGatherable?: boolean;
+  // Patch version (e.g., "2.3", "7.0")
+  patch?: string;
+}
+
+export interface ItemCategory {
+  id: number;
+  name: string;
+}
+
+export interface ClassJob {
+  id: number;
+  name: string;
+  abbreviation: string;
+}
+
+export interface ClassJobCategory {
+  id: number;
+  name: string;
+  jobs: number[];
+}
+
+// Recipe types
+export interface Recipe {
+  id: number;
+  itemId: number;
+  craftType: number;
+  craftTypeName: string;
+  recipeLevel: number;
+  stars: number;
+  ingredients: RecipeIngredient[];
+  resultAmount: number;
+}
+
+export interface RecipeIngredient {
+  itemId: number;
+  amount: number;
+}
+
+// Gathering types
+export interface GatheringPoint {
+  id: number;
+  itemId: number;
+  gatheringType: number;
+  gatheringTypeName: string;
+  level: number;
+  stars?: string;
+  placeNameId: number;
+  placeName: string;
+  mapId: number;
+  x: number;
+  y: number;
+  radius?: number;
+  // Node type flags
+  legendary?: boolean;
+  ephemeral?: boolean;
+  // Timed node info
+  timeRestriction?: boolean;
+  spawns?: number[];
+  duration?: number;
+  startTime?: number;
+  endTime?: number;
+  // Requirements
+  folklore?: number;
+  perceptionReq?: number;
+}
+
+// Market data types (Universalis API)
+export interface MarketData {
+  itemID: number;
+  worldID: number;
+  lastUploadTime: number;
+  listings: MarketListing[];
+  recentHistory: MarketHistory[];
+  currentAveragePrice: number;
+  currentAveragePriceNQ: number;
+  currentAveragePriceHQ: number;
+  regularSaleVelocity: number;
+  nqSaleVelocity: number;
+  hqSaleVelocity: number;
+  averagePrice: number;
+  averagePriceNQ: number;
+  averagePriceHQ: number;
+  minPrice: number;
+  minPriceNQ: number;
+  minPriceHQ: number;
+  maxPrice: number;
+  maxPriceNQ: number;
+  maxPriceHQ: number;
+  stackSizeHistogram: Record<string, number>;
+  stackSizeHistogramNQ: Record<string, number>;
+  stackSizeHistogramHQ: Record<string, number>;
+  listingsCount: number;
+  recentHistoryCount: number;
+  unitsForSale: number;
+  unitsSold: number;
+}
+
+export interface MarketListing {
+  listingID: string;
+  hq: boolean;
+  pricePerUnit: number;
+  quantity: number;
+  total: number;
+  retainerName: string;
+  retainerCity: number;
+  lastReviewTime: number;
+  worldName?: string;  // Available when querying data center
+  worldID?: number;    // Available when querying data center
+}
+
+export interface MarketHistory {
+  hq: boolean;
+  pricePerUnit: number;
+  quantity: number;
+  timestamp: number;
+  buyerName: string;
+}
+
+// World/Server types
+export interface World {
+  id: number;
+  name: string;
+}
+
+export interface DataCenter {
+  name: string;
+  region: string;
+  worlds: World[];
+}
+
+// Search/Filter types
+export interface SearchFilters {
+  query: string;
+  categoryId: number | null;
+  minLevel: number;
+  maxLevel: number;
+  classJobId: number | null;
+  craftableOnly: boolean;
+  gatherableOnly: boolean;
+}
+
+export interface SearchResult {
+  item: Item;
+  score: number;
+}
+
+// Data files structure
+export interface ItemsData {
+  items: Record<number, Item>;
+  categories: ItemCategory[];
+}
+
+export interface RecipesData {
+  recipes: Record<number, Recipe[]>; // keyed by itemId
+  craftTypes: { id: number; name: string }[];
+}
+
+export interface GatheringData {
+  points: Record<number, GatheringPoint[]>; // keyed by itemId
+  gatheringTypes: { id: number; name: string }[];
+  places: Record<number, string>;
+}
+
+// Item source types (how to obtain)
+export interface ItemSource {
+  type: 'gilshop' | 'gcshop' | 'specialshop' | 'craft' | 'gather' | 'duty' | 'quest' | 'drop' | 'venture' | 'voyage' | 'desynth' | 'instance' | 'treasure' | 'vendor';
+  typeName: string;
+  price?: number;
+  currency?: string;
+  currencyItemId?: number;
+  // For mob drops
+  mobIds?: number[];
+  mobNames?: string[];
+  totalMobs?: number;
+  // For instance drops (dungeons, raids, trials)
+  instanceNames?: string[];
+  instanceContentTypes?: number[];  // 2=Dungeon, 4=Trial, 5=Raid, 28=Ultimate
+  totalInstances?: number;
+  // For treasure map drops
+  mapNames?: string[];
+  totalMaps?: number;
+  // For quest rewards
+  questId?: number;
+  questName?: string;
+  // For desynthesis
+  desynthItemIds?: number[];
+  totalDesynthItems?: number;
+  // For vendor/NPC shops
+  vendors?: VendorInfo[];
+  // For voyage (submarine/airship)
+  voyageNames?: string[];
+  totalVoyages?: number;
+  // For retainer ventures
+  ventureLevel?: number;
+  ventureQuantities?: VentureQuantity[];
+  ventureCategory?: number; // 17 = Mining, 18 = Botany
+}
+
+export interface VentureQuantity {
+  quantity: number;
+  stat: 'perception' | 'gathering';
+  value?: number; // Required stat value (undefined = > 0)
+}
+
+export interface VendorInfo {
+  npcName: string;
+  price: number;
+  zoneName: string;
+  x?: number;
+  y?: number;
+  aetheryteName?: string;
+}
+
+export interface SourcesData {
+  sources: Record<number, ItemSource[]>; // keyed by itemId
+}
+
+// Crafting tree node for price calculation
+export interface CraftingTreeNode {
+  item: Item;
+  recipe: Recipe | null;           // If craftable
+  quantity: number;                // Required amount
+  marketPriceNQ: number | null;    // NQ market price per unit
+  marketPriceHQ: number | null;    // HQ market price per unit
+  serverNQ: string;                // Server with cheapest NQ price
+  serverHQ: string;                // Server with cheapest HQ price
+  craftCost: number | null;        // Total craft cost
+  children: CraftingTreeNode[];    // Child materials
+  depth: number;                   // Tree depth level
+  isCollapsed?: boolean;           // UI collapse state
+}
