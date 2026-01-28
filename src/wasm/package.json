@@ -9,13 +9,11 @@
   "files": [
     "app_wasm_bg.wasm",
     "app_wasm.js",
-    "app_wasm_bg.js",
     "app_wasm.d.ts"
   ],
   "main": "app_wasm.js",
   "types": "app_wasm.d.ts",
   "sideEffects": [
-    "./app_wasm.js",
     "./snippets/*"
   ]
 }

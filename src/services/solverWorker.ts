@@ -7,8 +7,8 @@ import type {
   SolverResult,
 } from '../types/crafting';
 
-// Import WASM module (bundler target auto-initializes on import)
-import {
+// Import WASM module
+import init, {
   raphael_solve,
   dfs_solve,
   nq_solve,
@@ -22,11 +22,22 @@ interface WorkerMessage {
   options: SolverOptions;
 }
 
-function solve(
+let wasmInitialized = false;
+
+async function ensureWasmInitialized() {
+  if (!wasmInitialized) {
+    await init();
+    wasmInitialized = true;
+  }
+}
+
+async function solve(
   status: CraftingStatus,
   solver: SolverType,
   options: SolverOptions
-): SolverResult {
+): Promise<SolverResult> {
+  await ensureWasmInitialized();
+
   let actions: CraftingAction[];
 
   switch (solver) {
@@ -81,10 +92,10 @@ function solve(
 }
 
 // Worker message handler
-self.onmessage = (e: MessageEvent<WorkerMessage>) => {
+self.onmessage = async (e: MessageEvent<WorkerMessage>) => {
   try {
     const { status, solver, options } = e.data;
-    const result = solve(status, solver, options);
+    const result = await solve(status, solver, options);
     self.postMessage(result);
   } catch (error) {
     self.postMessage({
