@@ -1,5 +1,5 @@
 // Recipe view component
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import type { Recipe } from '../types';
 import { getItemById } from '../services/searchService';
 import { getItemIconUrl } from '../services/xivapiService';
@@ -60,6 +60,8 @@ function getJobIconUrl(abbr: string): string {
 }
 
 export function RecipeView({ recipes }: RecipeViewProps) {
+  const navigate = useNavigate();
+
   if (recipes.length === 0) {
     return (
       <div className="text-center py-4 text-[var(--ffxiv-muted)]">
@@ -101,11 +103,19 @@ export function RecipeView({ recipes }: RecipeViewProps) {
                   )}
                 </span>
               </div>
-              {recipe.resultAmount > 1 && (
-                <span className="text-sm text-[var(--ffxiv-muted)]">
-                  產出: {recipe.resultAmount}
-                </span>
-              )}
+              <div className="flex items-center gap-3">
+                {recipe.resultAmount > 1 && (
+                  <span className="text-sm text-[var(--ffxiv-muted)]">
+                    產出: {recipe.resultAmount}
+                  </span>
+                )}
+                <button
+                  onClick={() => navigate(`/craft/${recipe.itemId}`)}
+                  className="px-3 py-1 text-xs bg-[var(--ffxiv-accent)] hover:bg-[var(--ffxiv-accent-hover)] text-white rounded transition-colors"
+                >
+                  模擬製作
+                </button>
+              </div>
             </div>
 
             {/* Master book requirement */}

@@ -1,6 +1,6 @@
 // Market price component
 import { useMarketData, useWorldSelector } from '../hooks/useMarketData';
-import { formatPrice, formatRelativeTime } from '../services/universalisApi';
+import { formatPrice, formatDateTime, formatRelativeTime } from '../services/universalisApi';
 
 interface MarketPriceProps {
   itemId: number;
@@ -91,28 +91,48 @@ export function MarketPrice({ itemId, isUntradable }: MarketPriceProps) {
               <div className="text-sm text-[var(--ffxiv-muted)] mb-2">
                 目前上架 ({marketData.listingsCount})
               </div>
-              <div className="space-y-1 max-h-48 overflow-y-auto">
-                {marketData.listings.slice(0, 10).map((listing, i) => (
-                  <div
-                    key={listing.listingID || i}
-                    className="flex items-center justify-between p-2 bg-[var(--ffxiv-card)] rounded text-sm"
-                  >
-                    <div className="flex items-center gap-2">
-                      {listing.hq && (
-                        <span className="text-yellow-400 text-xs">HQ</span>
-                      )}
-                      <span>x{listing.quantity}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-[var(--ffxiv-muted)]">
-                        {listing.retainerName}
-                      </span>
-                      <span className="font-medium">
-                        {formatPrice(listing.pricePerUnit)} gil
-                      </span>
-                    </div>
-                  </div>
-                ))}
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-[var(--ffxiv-border)]">
+                      <th className="text-left py-2 px-2 text-[var(--ffxiv-muted)] font-medium"></th>
+                      <th className="text-right py-2 px-2 text-[var(--ffxiv-muted)] font-medium">單價</th>
+                      <th className="text-right py-2 px-2 text-[var(--ffxiv-muted)] font-medium">數量</th>
+                      <th className="text-right py-2 px-2 text-[var(--ffxiv-muted)] font-medium">總計</th>
+                      <th className="text-left py-2 px-2 text-[var(--ffxiv-muted)] font-medium">雇員</th>
+                      <th className="text-left py-2 px-2 text-[var(--ffxiv-muted)] font-medium">伺服器</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {marketData.listings.slice(0, 20).map((listing, i) => (
+                      <tr
+                        key={listing.listingID || i}
+                        className="border-b border-[var(--ffxiv-border)]/50 hover:bg-[var(--ffxiv-card)]"
+                      >
+                        <td className="py-2 px-2">
+                          {listing.hq && (
+                            <span className="text-yellow-400 text-xs font-medium">HQ</span>
+                          )}
+                        </td>
+                        <td className="py-2 px-2 text-right font-medium">
+                          {formatPrice(listing.pricePerUnit)}
+                        </td>
+                        <td className="py-2 px-2 text-right">
+                          {listing.quantity}
+                        </td>
+                        <td className="py-2 px-2 text-right text-[var(--ffxiv-muted)]">
+                          {formatPrice(listing.total)}
+                        </td>
+                        <td className="py-2 px-2 text-[var(--ffxiv-muted)]">
+                          {listing.retainerName}
+                        </td>
+                        <td className="py-2 px-2 text-[var(--ffxiv-accent)]">
+                          {listing.worldName || selectedWorld}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
@@ -121,24 +141,48 @@ export function MarketPrice({ itemId, isUntradable }: MarketPriceProps) {
           {marketData.recentHistory && marketData.recentHistory.length > 0 && (
             <div>
               <div className="text-sm text-[var(--ffxiv-muted)] mb-2">近期交易</div>
-              <div className="space-y-1 max-h-32 overflow-y-auto">
-                {marketData.recentHistory.slice(0, 5).map((sale, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center justify-between p-2 bg-[var(--ffxiv-card)] rounded text-sm"
-                  >
-                    <div className="flex items-center gap-2">
-                      {sale.hq && <span className="text-yellow-400 text-xs">HQ</span>}
-                      <span>x{sale.quantity}</span>
-                      <span className="text-xs text-[var(--ffxiv-muted)]">
-                        {formatRelativeTime(sale.timestamp)}
-                      </span>
-                    </div>
-                    <span className="font-medium">
-                      {formatPrice(sale.pricePerUnit)} gil
-                    </span>
-                  </div>
-                ))}
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-[var(--ffxiv-border)]">
+                      <th className="text-left py-2 px-2 text-[var(--ffxiv-muted)] font-medium"></th>
+                      <th className="text-right py-2 px-2 text-[var(--ffxiv-muted)] font-medium">單價</th>
+                      <th className="text-right py-2 px-2 text-[var(--ffxiv-muted)] font-medium">數量</th>
+                      <th className="text-right py-2 px-2 text-[var(--ffxiv-muted)] font-medium">總計</th>
+                      <th className="text-left py-2 px-2 text-[var(--ffxiv-muted)] font-medium">伺服器</th>
+                      <th className="text-left py-2 px-2 text-[var(--ffxiv-muted)] font-medium">時間</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {marketData.recentHistory.slice(0, 10).map((sale, i) => (
+                      <tr
+                        key={i}
+                        className="border-b border-[var(--ffxiv-border)]/50 hover:bg-[var(--ffxiv-card)]"
+                      >
+                        <td className="py-2 px-2">
+                          {sale.hq && (
+                            <span className="text-yellow-400 text-xs font-medium">HQ</span>
+                          )}
+                        </td>
+                        <td className="py-2 px-2 text-right font-medium">
+                          {formatPrice(sale.pricePerUnit)}
+                        </td>
+                        <td className="py-2 px-2 text-right">
+                          {sale.quantity}
+                        </td>
+                        <td className="py-2 px-2 text-right text-[var(--ffxiv-muted)]">
+                          {formatPrice(sale.pricePerUnit * sale.quantity)}
+                        </td>
+                        <td className="py-2 px-2 text-[var(--ffxiv-accent)]">
+                          {sale.worldName || selectedWorld}
+                        </td>
+                        <td className="py-2 px-2 text-[var(--ffxiv-muted)]">
+                          {formatDateTime(sale.timestamp)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}

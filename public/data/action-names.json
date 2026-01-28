@@ -1,0 +1,182 @@
+{
+  "basic_synthesis": {
+    "en": "Basic Synthesis",
+    "zh": "製作",
+    "id": 100001
+  },
+  "basic_touch": {
+    "en": "Basic Touch",
+    "zh": "加工",
+    "id": 100002
+  },
+  "masters_mend": {
+    "en": "Master's Mend",
+    "zh": "精修",
+    "id": 100003
+  },
+  "hasty_touch": {
+    "en": "Hasty Touch",
+    "zh": "倉促",
+    "id": 100355
+  },
+  "rapid_synthesis": {
+    "en": "Rapid Synthesis",
+    "zh": "高速製作",
+    "id": 100363
+  },
+  "observe": {
+    "en": "Observe",
+    "zh": "觀察",
+    "id": 100010
+  },
+  "tricks_of_the_trade": {
+    "en": "Tricks of the Trade",
+    "zh": "秘訣",
+    "id": 100371
+  },
+  "waste_not": {
+    "en": "Waste Not",
+    "zh": "儉約",
+    "id": 4631
+  },
+  "veneration": {
+    "en": "Veneration",
+    "zh": "崇敬",
+    "id": 19297
+  },
+  "standard_touch": {
+    "en": "Standard Touch",
+    "zh": "中級加工",
+    "id": 100004
+  },
+  "great_strides": {
+    "en": "Great Strides",
+    "zh": "闊步",
+    "id": 260
+  },
+  "innovation": {
+    "en": "Innovation",
+    "zh": "改革",
+    "id": 19004
+  },
+  "final_appraisal": {
+    "en": "Final Appraisal",
+    "zh": "最終確認",
+    "id": 19012
+  },
+  "waste_not_ii": {
+    "en": "Waste Not II",
+    "zh": "長期儉約",
+    "id": 4639
+  },
+  "byregot_s_blessing": {
+    "en": "Byregot's Blessing",
+    "zh": "比爾格的祝福",
+    "id": 100339
+  },
+  "precise_touch": {
+    "en": "Precise Touch",
+    "zh": "集中加工",
+    "id": 100128
+  },
+  "muscle_memory": {
+    "en": "Muscle Memory",
+    "zh": "堅信",
+    "id": 100379
+  },
+  "careful_synthesis": {
+    "en": "Careful Synthesis",
+    "zh": "謹慎製作",
+    "id": 100203
+  },
+  "manipulation": {
+    "en": "Manipulation",
+    "zh": "掌握",
+    "id": 4574
+  },
+  "prudent_touch": {
+    "en": "Prudent Touch",
+    "zh": "儉約加工",
+    "id": 100227
+  },
+  "reflect": {
+    "en": "Reflect",
+    "zh": "閒靜",
+    "id": 100387
+  },
+  "preparatory_touch": {
+    "en": "Preparatory Touch",
+    "zh": "坯料加工",
+    "id": 100299
+  },
+  "groundwork": {
+    "en": "Groundwork",
+    "zh": "坯料製作",
+    "id": 100403
+  },
+  "delicate_synthesis": {
+    "en": "Delicate Synthesis",
+    "zh": "精密製作",
+    "id": 100323
+  },
+  "intensive_synthesis": {
+    "en": "Intensive Synthesis",
+    "zh": "集中製作",
+    "id": 100315
+  },
+  "trained_eye": {
+    "en": "Trained Eye",
+    "zh": "工匠的神速技巧",
+    "id": 100283
+  },
+  "advanced_touch": {
+    "en": "Advanced Touch",
+    "zh": "上級加工",
+    "id": 100411
+  },
+  "prudent_synthesis": {
+    "en": "Prudent Synthesis",
+    "zh": "儉約製作",
+    "id": 100427
+  },
+  "trained_finesse": {
+    "en": "Trained Finesse",
+    "zh": "工匠的神技",
+    "id": 100435
+  },
+  "careful_observation": {
+    "en": "Careful Observation",
+    "zh": "審慎觀察",
+    "id": 100395
+  },
+  "heart_and_soul": {
+    "en": "Heart and Soul",
+    "zh": "專心致志",
+    "id": 100419
+  },
+  "refined_touch": {
+    "en": "Refined Touch",
+    "zh": "精密加工",
+    "id": 100443
+  },
+  "daring_touch": {
+    "en": "Daring Touch",
+    "zh": "冒進",
+    "id": 100451
+  },
+  "immaculate_mend": {
+    "en": "Immaculate Mend",
+    "zh": "完美精修",
+    "id": 100467
+  },
+  "quick_innovation": {
+    "en": "Quick Innovation",
+    "zh": "快速改革",
+    "id": 100459
+  },
+  "trained_perfection": {
+    "en": "Trained Perfection",
+    "zh": "工匠的奇技",
+    "id": 100475
+  }
+}

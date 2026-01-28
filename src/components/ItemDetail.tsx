@@ -11,7 +11,8 @@ import { CraftingPriceTree } from './CraftingPriceTree';
 import { UsedForView } from './UsedForView';
 import { CopyButton } from './CopyButton';
 import { EquipmentStatsView } from './EquipmentStatsView';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useSettings, type TabType } from '../hooks/useSettings';
 import type { Item, Recipe, GatheringPoint, ItemSource } from '../types';
 
 function getRarityClass(rarity: number): string {
@@ -50,8 +51,6 @@ function cleanFFXIVText(text: string): string {
     .trim();
 }
 
-type TabType = 'obtain' | 'recipe' | 'gathering' | 'market' | 'craftcost' | 'usedfor';
-
 export function ItemDetail() {
   const { id } = useParams<{ id: string }>();
   const itemId = id ? parseInt(id) : null;
@@ -60,13 +59,14 @@ export function ItemDetail() {
   const { recipes: recipesData } = useRecipeData();
   const { points: gatheringData } = useGatheringData();
   const { sources: sourcesData } = useSourcesData();
+  const { tabOrder, getDefaultTab } = useSettings();
 
   const [item, setItem] = useState<Item | null>(null);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [gatheringPoints, setGatheringPoints] = useState<GatheringPoint[]>([]);
   const [sources, setSources] = useState<ItemSource[]>([]);
   const [usedForRecipes, setUsedForRecipes] = useState<Recipe[]>([]);
-  const [activeTab, setActiveTab] = useState<TabType>('obtain');
+  const [activeTab, setActiveTab] = useState<TabType>(getDefaultTab());
 
   useEffect(() => {
     if (!itemsLoading && itemId) {
@@ -239,70 +239,33 @@ export function ItemDetail() {
         </div>
       )}
 
-      {/* Tabs */}
+      {/* Tabs - rendered in user-defined order */}
       <div className="flex border-b border-[var(--ffxiv-accent)] mb-4 overflow-x-auto">
-        <button
-          onClick={() => setActiveTab('obtain')}
-          className={`px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
-            activeTab === 'obtain'
-              ? 'text-[var(--ffxiv-highlight)] border-b-2 border-[var(--ffxiv-highlight)]'
-              : 'text-[var(--ffxiv-muted)] hover:text-[var(--ffxiv-text)]'
-          }`}
-        >
-          取得方式 {obtainCount > 0 && `(${obtainCount})`}
-        </button>
-        <button
-          onClick={() => setActiveTab('recipe')}
-          className={`px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
-            activeTab === 'recipe'
-              ? 'text-[var(--ffxiv-highlight)] border-b-2 border-[var(--ffxiv-highlight)]'
-              : 'text-[var(--ffxiv-muted)] hover:text-[var(--ffxiv-text)]'
-          }`}
-        >
-          製作配方 {recipes.length > 0 && `(${recipes.length})`}
-        </button>
-        <button
-          onClick={() => setActiveTab('gathering')}
-          className={`px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
-            activeTab === 'gathering'
-              ? 'text-[var(--ffxiv-highlight)] border-b-2 border-[var(--ffxiv-highlight)]'
-              : 'text-[var(--ffxiv-muted)] hover:text-[var(--ffxiv-text)]'
-          }`}
-        >
-          採集地點 {gatheringPoints.length > 0 && `(${gatheringPoints.length})`}
-        </button>
-        <button
-          onClick={() => setActiveTab('market')}
-          className={`px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
-            activeTab === 'market'
-              ? 'text-[var(--ffxiv-highlight)] border-b-2 border-[var(--ffxiv-highlight)]'
-              : 'text-[var(--ffxiv-muted)] hover:text-[var(--ffxiv-text)]'
-          }`}
-        >
-          市場價格
-        </button>
-        {recipes.length > 0 && (
-          <button
-            onClick={() => setActiveTab('craftcost')}
-            className={`px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
-              activeTab === 'craftcost'
-                ? 'text-[var(--ffxiv-highlight)] border-b-2 border-[var(--ffxiv-highlight)]'
-                : 'text-[var(--ffxiv-muted)] hover:text-[var(--ffxiv-text)]'
-            }`}
-          >
-            製作成本
-          </button>
-        )}
-        <button
-          onClick={() => setActiveTab('usedfor')}
-          className={`px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
-            activeTab === 'usedfor'
-              ? 'text-[var(--ffxiv-highlight)] border-b-2 border-[var(--ffxiv-highlight)]'
-              : 'text-[var(--ffxiv-muted)] hover:text-[var(--ffxiv-text)]'
-          }`}
-        >
-          用途 {usedForRecipes.length > 0 && `(${usedForRecipes.length})`}
-        </button>
+        {tabOrder.map((tab) => {
+          // Skip craftcost tab if no recipes
+          if (tab.id === 'craftcost' && recipes.length === 0) return null;
+
+          // Get count for each tab
+          let count: number | null = null;
+          if (tab.id === 'obtain') count = obtainCount;
+          else if (tab.id === 'recipe') count = recipes.length;
+          else if (tab.id === 'gathering') count = gatheringPoints.length;
+          else if (tab.id === 'usedfor') count = usedForRecipes.length;
+
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
+                activeTab === tab.id
+                  ? 'text-[var(--ffxiv-highlight)] border-b-2 border-[var(--ffxiv-highlight)]'
+                  : 'text-[var(--ffxiv-muted)] hover:text-[var(--ffxiv-text)]'
+              }`}
+            >
+              {tab.name} {count !== null && count > 0 && `(${count})`}
+            </button>
+          );
+        })}
       </div>
 
       {/* Tab content */}

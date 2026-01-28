@@ -5,6 +5,8 @@ import { SearchBar } from './components/SearchBar';
 import { FilterPanel } from './components/FilterPanel';
 import { ItemList } from './components/ItemList';
 import { ItemDetail } from './components/ItemDetail';
+import { CraftingSimulator } from './components/crafting';
+import { SettingsModal } from './components/SettingsModal';
 import { useItemData } from './hooks/useItemData';
 import { useSearch } from './hooks/useSearch';
 
@@ -50,6 +52,7 @@ function HomePage() {
 
 function App() {
   const [dataLoaded, setDataLoaded] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const { loading } = useItemData();
 
   useEffect(() => {
@@ -61,6 +64,9 @@ function App() {
   return (
     <BrowserRouter basename="/ffxiv-item-search-tc">
       <div className="min-h-screen bg-[var(--ffxiv-bg)] flex flex-col">
+        {/* Settings Modal */}
+        <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
+
         {/* Header */}
         <header className="bg-[var(--ffxiv-bg-secondary)] border-b border-[var(--ffxiv-border)] sticky top-0 z-10">
           <div className="max-w-6xl mx-auto px-4 py-4">
@@ -73,20 +79,36 @@ function App() {
               <div className="flex items-center gap-4">
                 <a
                   href="https://cycleapple.github.io/xiv-tc-toolbox/"
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="text-sm text-[var(--ffxiv-muted)] hover:text-[var(--ffxiv-accent)] transition-colors"
                 >
-                  工具箱
+                  返回工具箱
                 </a>
                 <a
-                  href="https://universalis.app"
+                  href="https://discord.gg/X556xjySDG"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm text-[var(--ffxiv-muted)] hover:text-[var(--ffxiv-accent)] transition-colors"
                 >
-                  Universalis
+                  加入Discord社群
                 </a>
+                <a
+                  href="https://portaly.cc/thecy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-[var(--ffxiv-muted)] hover:text-[var(--ffxiv-accent)] transition-colors"
+                >
+                  支持作者
+                </a>
+                <button
+                  onClick={() => setSettingsOpen(true)}
+                  className="p-2 text-[var(--ffxiv-muted)] hover:text-[var(--ffxiv-accent)] hover:bg-[var(--ffxiv-accent)]/10 rounded transition-colors"
+                  title="設定"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </button>
               </div>
             </div>
           </div>
@@ -103,6 +125,7 @@ function App() {
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/item/:id" element={<ItemDetail />} />
+              <Route path="/craft/:itemId" element={<CraftingSimulator />} />
             </Routes>
           )}
         </main>
@@ -113,6 +136,16 @@ function App() {
             <div className="text-center text-xs text-[var(--ffxiv-muted)]">
               <p className="mb-1">FINAL FANTASY XIV © SQUARE ENIX CO., LTD. All rights reserved.</p>
               <p>
+                Credit:{' '}
+                <a
+                  href="https://universalis.app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-[var(--ffxiv-accent)] transition-colors"
+                >
+                  Universalis
+                </a>
+                {' · '}
                 <a
                   href="https://xivapi.com"
                   target="_blank"
@@ -123,12 +156,21 @@ function App() {
                 </a>
                 {' · '}
                 <a
-                  href="https://github.com/miaki3457/ffxiv-datamining-tc"
+                  href="https://github.com/Tnze/ffxiv-best-craft"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-[var(--ffxiv-accent)] transition-colors"
                 >
-                  資料來源
+                  ffxiv-best-craft
+                </a>
+                {' · '}
+                <a
+                  href="https://ffxivteamcraft.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-[var(--ffxiv-accent)] transition-colors"
+                >
+                  Teamcraft
                 </a>
               </p>
             </div>

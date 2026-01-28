@@ -853,21 +853,6 @@ export function ObtainView({ itemId, sources, recipes, gatheringPoints }: Obtain
         </div>
       )}
 
-      {/* External link for more complete data */}
-      <div className="mt-6 pt-4 border-t border-[var(--ffxiv-accent)]">
-        <p className="text-xs text-[var(--ffxiv-muted)] text-center">
-          部分來源（如副本掉落、藏寶圖獎勵）需要社群貢獻資料。
-          <a
-            href={`https://ffxivteamcraft.com/db/zh/item/${itemId}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[var(--ffxiv-highlight)] hover:underline ml-1"
-          >
-            在 Teamcraft 查看完整資料 →
-          </a>
-        </p>
-      </div>
-
       {/* Map modal for NPC locations */}
       <MapModal
         isOpen={mapModal.isOpen}

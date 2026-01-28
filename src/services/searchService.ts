@@ -198,3 +198,6 @@ export function getAllPatches(): string[] {
     return bMinor - aMinor;
   });
 }
+
+// Re-export from useItemData for convenience
+export { getRecipesForItem } from '../hooks/useItemData';

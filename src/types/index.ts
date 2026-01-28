@@ -178,6 +178,8 @@ export interface MarketHistory {
   quantity: number;
   timestamp: number;
   buyerName: string;
+  worldName?: string;  // Available when querying data center
+  worldID?: number;    // Available when querying data center
 }
 
 // World/Server types
