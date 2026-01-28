@@ -19,81 +19,81 @@ const RARITY_OPTIONS = [
   { value: 7, label: '粉色' },
 ];
 
-// Job data for icons
+// Job data for icons - use abbreviation for garlandtools
 const JOB_CATEGORIES = [
   {
     name: '坦克',
     jobs: [
-      { abbr: 'PLD', name: '騎士', icon: 'paladin' },
-      { abbr: 'WAR', name: '戰士', icon: 'warrior' },
-      { abbr: 'DRK', name: '暗黑騎士', icon: 'darkknight' },
-      { abbr: 'GNB', name: '絕槍戰士', icon: 'gunbreaker' },
+      { abbr: 'PLD', name: '騎士' },
+      { abbr: 'WAR', name: '戰士' },
+      { abbr: 'DRK', name: '暗黑騎士' },
+      { abbr: 'GNB', name: '絕槍戰士' },
     ],
   },
   {
     name: '治療',
     jobs: [
-      { abbr: 'WHM', name: '白魔法師', icon: 'whitemage' },
-      { abbr: 'SCH', name: '學者', icon: 'scholar' },
-      { abbr: 'AST', name: '占星術士', icon: 'astrologian' },
-      { abbr: 'SGE', name: '賢者', icon: 'sage' },
+      { abbr: 'WHM', name: '白魔法師' },
+      { abbr: 'SCH', name: '學者' },
+      { abbr: 'AST', name: '占星術士' },
+      { abbr: 'SGE', name: '賢者' },
     ],
   },
   {
     name: '近戰',
     jobs: [
-      { abbr: 'MNK', name: '武僧', icon: 'monk' },
-      { abbr: 'DRG', name: '龍騎士', icon: 'dragoon' },
-      { abbr: 'NIN', name: '忍者', icon: 'ninja' },
-      { abbr: 'SAM', name: '武士', icon: 'samurai' },
-      { abbr: 'RPR', name: '鐮刀師', icon: 'reaper' },
-      { abbr: 'VPR', name: '蝮蛇劍士', icon: 'viper' },
+      { abbr: 'MNK', name: '武僧' },
+      { abbr: 'DRG', name: '龍騎士' },
+      { abbr: 'NIN', name: '忍者' },
+      { abbr: 'SAM', name: '武士' },
+      { abbr: 'RPR', name: '鐮刀師' },
+      { abbr: 'VPR', name: '蝮蛇劍士' },
     ],
   },
   {
     name: '遠程',
     jobs: [
-      { abbr: 'BRD', name: '吟遊詩人', icon: 'bard' },
-      { abbr: 'MCH', name: '機工士', icon: 'machinist' },
-      { abbr: 'DNC', name: '舞者', icon: 'dancer' },
+      { abbr: 'BRD', name: '吟遊詩人' },
+      { abbr: 'MCH', name: '機工士' },
+      { abbr: 'DNC', name: '舞者' },
     ],
   },
   {
     name: '法系',
     jobs: [
-      { abbr: 'BLM', name: '黑魔法師', icon: 'blackmage' },
-      { abbr: 'SMN', name: '召喚師', icon: 'summoner' },
-      { abbr: 'RDM', name: '赤魔法師', icon: 'redmage' },
-      { abbr: 'PCT', name: '繪靈法師', icon: 'pictomancer' },
-      { abbr: 'BLU', name: '青魔法師', icon: 'bluemage' },
+      { abbr: 'BLM', name: '黑魔法師' },
+      { abbr: 'SMN', name: '召喚師' },
+      { abbr: 'RDM', name: '赤魔法師' },
+      { abbr: 'PCT', name: '繪靈法師' },
+      { abbr: 'BLU', name: '青魔法師' },
     ],
   },
   {
     name: '製作',
     jobs: [
-      { abbr: 'CRP', name: '木工師', icon: 'carpenter' },
-      { abbr: 'BSM', name: '鍛造師', icon: 'blacksmith' },
-      { abbr: 'ARM', name: '甲冑師', icon: 'armorer' },
-      { abbr: 'GSM', name: '金工師', icon: 'goldsmith' },
-      { abbr: 'LTW', name: '皮革師', icon: 'leatherworker' },
-      { abbr: 'WVR', name: '裁縫師', icon: 'weaver' },
-      { abbr: 'ALC', name: '鍊金術師', icon: 'alchemist' },
-      { abbr: 'CUL', name: '烹調師', icon: 'culinarian' },
+      { abbr: 'CRP', name: '木工師' },
+      { abbr: 'BSM', name: '鍛造師' },
+      { abbr: 'ARM', name: '甲冑師' },
+      { abbr: 'GSM', name: '金工師' },
+      { abbr: 'LTW', name: '皮革師' },
+      { abbr: 'WVR', name: '裁縫師' },
+      { abbr: 'ALC', name: '鍊金術師' },
+      { abbr: 'CUL', name: '烹調師' },
     ],
   },
   {
     name: '採集',
     jobs: [
-      { abbr: 'MIN', name: '採礦師', icon: 'miner' },
-      { abbr: 'BTN', name: '園藝師', icon: 'botanist' },
-      { abbr: 'FSH', name: '釣魚師', icon: 'fisher' },
+      { abbr: 'MIN', name: '採礦師' },
+      { abbr: 'BTN', name: '園藝師' },
+      { abbr: 'FSH', name: '釣魚師' },
     ],
   },
 ];
 
-// Get job icon URL from XIVAPI
-function getJobIconUrl(iconName: string): string {
-  return `https://xivapi.com/cj/1/${iconName}.png`;
+// Get job icon URL from garlandtools (has all jobs including newer ones)
+function getJobIconUrl(abbr: string): string {
+  return `https://garlandtools.org/files/icons/job/${abbr}.png`;
 }
 
 export function FilterPanel({ filters, categories, onFilterChange, onReset }: FilterPanelProps) {
@@ -416,7 +416,7 @@ export function FilterPanel({ filters, categories, onFilterChange, onReset }: Fi
                           title={job.name}
                         >
                           <img
-                            src={getJobIconUrl(job.icon)}
+                            src={getJobIconUrl(job.abbr)}
                             alt={job.name}
                             className="w-full h-full object-contain p-0.5"
                             onError={(e) => {
