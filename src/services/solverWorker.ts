@@ -2,8 +2,11 @@
 // Based on ffxiv-best-craft SolverWorker.ts
 
 onmessage = async (e) => {
-  const { dfs_solve, nq_solve, reflect_solve, raphael_solve } =
-    await import('../wasm/app_wasm');
+  // Import and initialize WASM
+  const wasm = await import('../wasm/app_wasm');
+  await wasm.default(); // Must call init() before using functions
+
+  const { dfs_solve, nq_solve, reflect_solve, raphael_solve } = wasm;
 
   const { name, args: argsJson } = e.data;
   const args = JSON.parse(argsJson);
