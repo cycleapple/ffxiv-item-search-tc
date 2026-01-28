@@ -408,7 +408,7 @@ export function FilterPanel({ filters, categories, onFilterChange, onReset }: Fi
                         <button
                           key={job.abbr}
                           onClick={() => toggleJob(job.abbr)}
-                          className={`relative w-8 h-8 rounded transition-all ${
+                          className={`flex items-center justify-center w-8 h-8 rounded transition-all ${
                             isSelected
                               ? 'bg-[var(--ffxiv-accent)] ring-2 ring-[var(--ffxiv-accent)]'
                               : 'bg-[var(--ffxiv-bg-tertiary)] hover:bg-[var(--ffxiv-card-hover)] opacity-60 hover:opacity-100'
@@ -418,7 +418,7 @@ export function FilterPanel({ filters, categories, onFilterChange, onReset }: Fi
                           <img
                             src={getJobIconUrl(job.abbr)}
                             alt={job.name}
-                            className="w-full h-full object-contain p-0.5"
+                            className="w-6 h-6 object-contain"
                             onError={(e) => {
                               (e.target as HTMLImageElement).style.display = 'none';
                             }}
