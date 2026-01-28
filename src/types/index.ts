@@ -288,6 +288,15 @@ export interface SourcesData {
   sources: Record<number, ItemSource[]>; // keyed by itemId
 }
 
+// Simplified listing info for tooltip display
+export interface ListingInfo {
+  price: number;
+  quantity: number;
+  server: string;
+  hq: boolean;
+  lastReviewTime: number;
+}
+
 // Crafting tree node for price calculation
 export interface CraftingTreeNode {
   item: Item;
@@ -301,4 +310,12 @@ export interface CraftingTreeNode {
   children: CraftingTreeNode[];    // Child materials
   depth: number;                   // Tree depth level
   isCollapsed?: boolean;           // UI collapse state
+  listings?: ListingInfo[];        // Recent listings for tooltip
+}
+
+// Price check list item for tracking items to compare prices
+export interface PriceCheckListItem {
+  itemId: number;
+  quantity: number;
+  addedAt: number;
 }

@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useCraftingTree, type QualityFilter } from '../hooks/useCraftingTree';
 import { CraftingTreeNodeComponent } from './CraftingTreeNode';
+import { CraftingMaterialTreeView } from './CraftingMaterialTreeView';
 import { formatPrice } from '../services/universalisApi';
 
 interface CraftingPriceTreeProps {
@@ -9,11 +10,14 @@ interface CraftingPriceTreeProps {
   isUntradable?: boolean;
 }
 
+type ViewMode = 'tree' | 'flat';
+
 export function CraftingPriceTree({ itemId, isUntradable }: CraftingPriceTreeProps) {
   const [showCrystals, setShowCrystals] = useState(false);
   const [qualityFilter, setQualityFilter] = useState<QualityFilter>('both');
+  const [viewMode, setViewMode] = useState<ViewMode>('flat');
 
-  const { tree, loading, error, totalCraftCost, totalBuyCost, refresh } = useCraftingTree(
+  const { tree, loading, error, totalCraftCost, totalBuyCostHQ, refresh } = useCraftingTree(
     itemId,
     showCrystals,
     qualityFilter
@@ -27,15 +31,38 @@ export function CraftingPriceTree({ itemId, isUntradable }: CraftingPriceTreePro
     );
   }
 
-  // Calculate savings
-  const craftSavings = totalBuyCost - totalCraftCost;
-  const buySavings = totalCraftCost - totalBuyCost;
+  // Calculate savings (HQ buy vs cheapest craft)
+  const craftSavings = totalBuyCostHQ - totalCraftCost;
 
   return (
     <div className="bg-[var(--ffxiv-bg)] rounded-lg p-4 border border-[var(--ffxiv-accent)]">
       {/* Header controls */}
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-wrap">
+          {/* View mode toggle */}
+          <div className="flex items-center gap-1 bg-[var(--ffxiv-card)] rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('tree')}
+              className={`px-2 py-1 text-xs rounded transition-colors ${
+                viewMode === 'tree'
+                  ? 'bg-[var(--ffxiv-accent)] text-white'
+                  : 'text-[var(--ffxiv-muted)] hover:text-[var(--ffxiv-text)]'
+              }`}
+            >
+              清單
+            </button>
+            <button
+              onClick={() => setViewMode('flat')}
+              className={`px-2 py-1 text-xs rounded transition-colors ${
+                viewMode === 'flat'
+                  ? 'bg-[var(--ffxiv-accent)] text-white'
+                  : 'text-[var(--ffxiv-muted)] hover:text-[var(--ffxiv-text)]'
+              }`}
+            >
+              樹狀
+            </button>
+          </div>
+
           {/* Quality filter */}
           <div className="flex items-center gap-2">
             <label className="text-sm text-[var(--ffxiv-muted)]">品質:</label>
@@ -90,26 +117,26 @@ export function CraftingPriceTree({ itemId, isUntradable }: CraftingPriceTreePro
           {/* Cost summary */}
           <div className="bg-[var(--ffxiv-card)] rounded-lg p-4 border border-[var(--ffxiv-accent)]">
             <div className="text-sm text-[var(--ffxiv-muted)] mb-3">
-              以全伺服器最低價計算（每項材料取各伺服器最便宜的價格）
+              比較：直購HQ成品 vs 用最便宜素材製作（含NQ）
             </div>
 
             <div className="grid grid-cols-2 gap-4 mb-3">
               <div className="text-center">
-                <div className="text-xs text-[var(--ffxiv-muted)] mb-1">最便宜製作</div>
+                <div className="text-xs text-[var(--ffxiv-muted)] mb-1">自製成本</div>
                 <div className="text-lg font-medium text-blue-400">
                   {totalCraftCost > 0 ? `${formatPrice(totalCraftCost)} gil` : '-'}
                 </div>
               </div>
               <div className="text-center">
-                <div className="text-xs text-[var(--ffxiv-muted)] mb-1">直購成品</div>
+                <div className="text-xs text-[var(--ffxiv-muted)] mb-1">直購HQ成品</div>
                 <div className="text-lg font-medium text-yellow-400">
-                  {totalBuyCost > 0 ? `${formatPrice(totalBuyCost)} gil` : '-'}
+                  {totalBuyCostHQ > 0 ? `${formatPrice(totalBuyCostHQ)} gil` : '-'}
                 </div>
               </div>
             </div>
 
             {/* Savings comparison */}
-            {totalCraftCost > 0 && totalBuyCost > 0 && (
+            {totalCraftCost > 0 && totalBuyCostHQ > 0 && (
               <div className="flex justify-center gap-6 text-sm">
                 {craftSavings > 0 ? (
                   <span className="text-blue-400">
@@ -117,7 +144,7 @@ export function CraftingPriceTree({ itemId, isUntradable }: CraftingPriceTreePro
                   </span>
                 ) : craftSavings < 0 ? (
                   <span className="text-yellow-400">
-                    直購省 {formatPrice(buySavings)} gil
+                    直購HQ省 {formatPrice(-craftSavings)} gil
                   </span>
                 ) : (
                   <span className="text-[var(--ffxiv-muted)]">
@@ -126,32 +153,42 @@ export function CraftingPriceTree({ itemId, isUntradable }: CraftingPriceTreePro
                 )}
               </div>
             )}
-            {totalCraftCost > 0 && totalBuyCost === 0 && (
+            {totalCraftCost > 0 && totalBuyCostHQ === 0 && (
               <div className="text-center text-sm text-[var(--ffxiv-muted)]">
-                市場無上架
+                市場無HQ上架
               </div>
             )}
-            {totalCraftCost === 0 && totalBuyCost > 0 && (
+            {totalCraftCost === 0 && totalBuyCostHQ > 0 && (
               <div className="text-center text-sm text-[var(--ffxiv-muted)]">
                 無法計算製作成本
               </div>
             )}
           </div>
 
-          {/* Materials tree */}
+          {/* Materials view - based on view mode */}
           {tree.children.length > 0 && (
             <div>
-              <div className="text-sm text-[var(--ffxiv-muted)] mb-3">材料樹狀圖</div>
-              <div className="space-y-2">
-                {tree.children.map((child, index) => (
-                  <CraftingTreeNodeComponent
-                    key={`${child.item.id}-${index}`}
-                    node={child}
-                    showCrystals={showCrystals}
-                    qualityFilter={qualityFilter}
-                  />
-                ))}
+              <div className="text-sm text-[var(--ffxiv-muted)] mb-3">
+                {viewMode === 'tree' ? '材料清單' : '材料樹狀圖'}
               </div>
+
+              {viewMode === 'tree' ? (
+                <div className="space-y-2">
+                  {tree.children.map((child, index) => (
+                    <CraftingTreeNodeComponent
+                      key={`${child.item.id}-${index}`}
+                      node={child}
+                      showCrystals={showCrystals}
+                      qualityFilter={qualityFilter}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <CraftingMaterialTreeView
+                  tree={tree}
+                  qualityFilter={qualityFilter}
+                />
+              )}
             </div>
           )}
 

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import type { Item } from '../types';
 import { getItemIconUrl } from '../services/xivapiService';
 import { CopyButton } from './CopyButton';
+import { AddToPriceListButton } from './AddToPriceListButton';
 
 interface ItemCardProps {
   item: Item;
@@ -70,6 +71,9 @@ export function ItemCard({ item }: ItemCardProps) {
             )}
             {item.canBeHq && (
               <span className="px-1.5 py-0.5 bg-[var(--ffxiv-highlight)]/20 text-[var(--ffxiv-highlight)] rounded">HQ</span>
+            )}
+            {!item.isUntradable && (
+              <AddToPriceListButton itemId={item.id} variant="small" />
             )}
           </div>
         </div>

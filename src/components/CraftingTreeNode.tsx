@@ -6,6 +6,7 @@ import type { QualityFilter } from '../hooks/useCraftingTree';
 import { getItemIconUrl } from '../services/xivapiService';
 import { formatPrice } from '../services/universalisApi';
 import { CopyButton } from './CopyButton';
+import { ListingsTooltip } from './ListingsTooltip';
 
 interface CraftingTreeNodeProps {
   node: TreeNodeType;
@@ -79,26 +80,28 @@ export function CraftingTreeNodeComponent({ node, showCrystals, qualityFilter }:
           </button>
         )}
 
-        {/* Item icon */}
-        <Link
-          to={`/item/${node.item.id}`}
-          className="flex-shrink-0 w-10 h-10 bg-[var(--ffxiv-bg)] rounded overflow-hidden relative"
-        >
-          <img
-            src={iconUrl}
-            alt={node.item.name}
-            className="w-full h-full object-contain"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = getItemIconUrl(0);
-            }}
-          />
-          {/* Quantity badge */}
-          {node.quantity > 1 && (
-            <span className="absolute -top-1 -right-1 bg-[var(--ffxiv-highlight)] text-white text-xs px-1 rounded">
-              x{node.quantity}
-            </span>
-          )}
-        </Link>
+        {/* Item icon with tooltip */}
+        <ListingsTooltip listings={node.listings}>
+          <Link
+            to={`/item/${node.item.id}`}
+            className="flex-shrink-0 w-10 h-10 bg-[var(--ffxiv-bg)] rounded overflow-hidden relative"
+          >
+            <img
+              src={iconUrl}
+              alt={node.item.name}
+              className="w-full h-full object-contain"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = getItemIconUrl(0);
+              }}
+            />
+            {/* Quantity badge */}
+            {node.quantity > 1 && (
+              <span className="absolute -top-1 -right-1 bg-[var(--ffxiv-highlight)] text-white text-xs px-1 rounded">
+                x{node.quantity}
+              </span>
+            )}
+          </Link>
+        </ListingsTooltip>
 
         {/* Item info */}
         <div className="flex-1 min-w-0">

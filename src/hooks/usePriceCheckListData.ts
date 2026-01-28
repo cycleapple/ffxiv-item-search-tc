@@ -1,6 +1,6 @@
-// Hook for building and calculating crafting price tree
+// Hook for fetching price and crafting data for price check list items
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import type { CraftingTreeNode, MarketData, ListingInfo } from '../types';
+import type { PriceCheckListItem, CraftingTreeNode, MarketData, Item, ListingInfo } from '../types';
 import { getItemById } from '../services/searchService';
 import { getMultipleMarketData } from '../services/universalisApi';
 import { getRecipesForItem } from './useItemData';
@@ -9,19 +9,24 @@ import { getRecipesForItem } from './useItemData';
 const CRYSTAL_IDS = new Set([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
 
 const MAX_DEPTH = 10;
-
-// Always use data center for cross-server price comparison
 const DATA_CENTER = '陸行鳥';
 
-// Quality filter type
 export type QualityFilter = 'both' | 'nq' | 'hq';
 
-interface UseCraftingTreeReturn {
+export interface PriceCheckListItemData {
+  listItem: PriceCheckListItem;
+  item: Item | null;
   tree: CraftingTreeNode | null;
-  loading: boolean;
-  error: string | null;
   totalCraftCost: number;
   totalBuyCostHQ: number;
+}
+
+interface UsePriceCheckListDataReturn {
+  items: PriceCheckListItemData[];
+  loading: boolean;
+  error: string | null;
+  grandTotalCraftCost: number;
+  grandTotalBuyCostHQ: number;
   refresh: () => void;
 }
 
@@ -35,23 +40,17 @@ function buildTreeStructure(
   depth: number,
   showCrystals: boolean
 ): CraftingTreeNode | null {
-  // Depth limit
   if (depth > MAX_DEPTH) return null;
-
-  // Cycle detection
   if (visitedIds.has(itemId)) return null;
 
   const item = getItemById(itemId);
   if (!item) return null;
 
-  // Skip crystals if not showing them
   if (!showCrystals && CRYSTAL_IDS.has(itemId)) return null;
 
-  // Clone visited set for this branch
   const newVisited = new Set(visitedIds);
   newVisited.add(itemId);
 
-  // Get recipe for this item
   const recipes = getRecipesForItem(itemId);
   const recipe = recipes.length > 0 ? recipes[0] : null;
 
@@ -68,7 +67,6 @@ function buildTreeStructure(
     depth,
   };
 
-  // Build children if recipe exists
   if (recipe) {
     for (const ingredient of recipe.ingredients) {
       const childNode = buildTreeStructure(
@@ -88,16 +86,23 @@ function buildTreeStructure(
 }
 
 /**
- * Collect all unique item IDs from the tree
+ * Collect all unique item IDs from multiple trees
  */
-function collectAllItemIds(node: CraftingTreeNode): Set<number> {
+function collectAllItemIdsFromTrees(trees: (CraftingTreeNode | null)[]): Set<number> {
   const ids = new Set<number>();
-  ids.add(node.item.id);
-  for (const child of node.children) {
-    for (const id of collectAllItemIds(child)) {
-      ids.add(id);
+
+  function collectFromNode(node: CraftingTreeNode | null) {
+    if (!node) return;
+    ids.add(node.item.id);
+    for (const child of node.children) {
+      collectFromNode(child);
     }
   }
+
+  for (const tree of trees) {
+    collectFromNode(tree);
+  }
+
   return ids;
 }
 
@@ -163,7 +168,6 @@ function extractListings(priceData: MarketData, limit: number = 8): ListingInfo[
     return [];
   }
 
-  // Sort by price and take top N
   const sorted = [...priceData.listings]
     .sort((a, b) => a.pricePerUnit - b.pricePerUnit)
     .slice(0, limit);
@@ -221,18 +225,15 @@ function getCheapestBuyPrice(node: CraftingTreeNode): number | null {
  * Always uses cheapest materials (NQ or HQ) for craft cost calculation
  */
 function calculateCosts(node: CraftingTreeNode): void {
-  // First, calculate costs for all children
   for (const child of node.children) {
     calculateCosts(child);
   }
 
-  // If no recipe, can only buy
   if (!node.recipe || node.children.length === 0) {
     node.craftCost = null;
     return;
   }
 
-  // Calculate craft cost from children using cheapest materials
   let craftCost = 0;
   for (const child of node.children) {
     const childCraftCost = child.craftCost;
@@ -257,7 +258,6 @@ function calculateCosts(node: CraftingTreeNode): void {
     craftCost += cheapestChildCost;
   }
 
-  // Adjust craft cost by result amount
   if (node.recipe.resultAmount > 1) {
     craftCost = craftCost / node.recipe.resultAmount * node.quantity;
   }
@@ -280,14 +280,14 @@ function calculateTotals(tree: CraftingTreeNode): { craftCost: number; buyCostHQ
 }
 
 /**
- * Hook to build and calculate crafting price tree
+ * Hook for fetching price check list data
  */
-export function useCraftingTree(
-  itemId: number | null,
+export function usePriceCheckListData(
+  list: PriceCheckListItem[],
   showCrystals: boolean,
-  qualityFilter: QualityFilter = 'both'
-): UseCraftingTreeReturn {
-  const [tree, setTree] = useState<CraftingTreeNode | null>(null);
+  qualityFilter: QualityFilter
+): UsePriceCheckListDataReturn {
+  const [items, setItems] = useState<PriceCheckListItemData[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -297,41 +297,76 @@ export function useCraftingTree(
   }, []);
 
   useEffect(() => {
-    if (!itemId) {
-      setTree(null);
+    if (list.length === 0) {
+      setItems([]);
       return;
     }
 
-    const currentItemId = itemId;
     let cancelled = false;
 
-    async function buildTree() {
+    async function fetchData() {
       setLoading(true);
       setError(null);
 
       try {
-        const rootTree = buildTreeStructure(currentItemId, 1, new Set(), 0, showCrystals);
+        // Build trees for all items
+        const trees: { listItem: PriceCheckListItem; tree: CraftingTreeNode | null }[] = [];
 
-        if (!rootTree) {
-          setError('無法建立製作樹');
-          setTree(null);
-          setLoading(false);
-          return;
+        for (const listItem of list) {
+          const tree = buildTreeStructure(listItem.itemId, listItem.quantity, new Set(), 0, showCrystals);
+          trees.push({ listItem, tree });
         }
 
-        const allIds = Array.from(collectAllItemIds(rootTree));
+        // Collect all item IDs from all trees
+        const allIds = Array.from(collectAllItemIdsFromTrees(trees.map(t => t.tree)));
+
+        // Fetch prices for all items at once
         const prices = await getMultipleMarketData(allIds, DATA_CENTER);
 
         if (cancelled) return;
 
-        applyPrices(rootTree, prices);
-        calculateCosts(rootTree);
+        // Apply prices and calculate costs
+        const result: PriceCheckListItemData[] = trees.map(({ listItem, tree }) => {
+          const item = getItemById(listItem.itemId) ?? null;
 
-        setTree(rootTree);
+          if (tree) {
+            applyPrices(tree, prices);
+            calculateCosts(tree);
+            const totals = calculateTotals(tree);
+
+            return {
+              listItem,
+              item,
+              tree,
+              totalCraftCost: totals.craftCost,
+              totalBuyCostHQ: totals.buyCostHQ,
+            };
+          }
+
+          // No tree - just get HQ market price for comparison
+          const priceData = prices[listItem.itemId];
+          let buyCostHQ = 0;
+          if (priceData) {
+            const hqResult = findCheapestHQ(priceData);
+            if (hqResult.price !== null) {
+              buyCostHQ = hqResult.price * listItem.quantity;
+            }
+          }
+
+          return {
+            listItem,
+            item,
+            tree: null,
+            totalCraftCost: 0,
+            totalBuyCostHQ: buyCostHQ,
+          };
+        });
+
+        setItems(result);
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : '發生錯誤');
-          setTree(null);
+          setItems([]);
         }
       } finally {
         if (!cancelled) {
@@ -340,24 +375,32 @@ export function useCraftingTree(
       }
     }
 
-    buildTree();
+    fetchData();
 
     return () => {
       cancelled = true;
     };
-  }, [itemId, showCrystals, qualityFilter, refreshTrigger]);
+  }, [list, showCrystals, qualityFilter, refreshTrigger]);
 
-  const totals = useMemo(() => {
-    if (!tree) return { craftCost: 0, buyCostHQ: 0 };
-    return calculateTotals(tree);
-  }, [tree]);
+  // Calculate grand totals
+  const grandTotals = useMemo(() => {
+    let craftCost = 0;
+    let buyCostHQ = 0;
+
+    for (const item of items) {
+      craftCost += item.totalCraftCost;
+      buyCostHQ += item.totalBuyCostHQ;
+    }
+
+    return { craftCost, buyCostHQ };
+  }, [items]);
 
   return {
-    tree,
+    items,
     loading,
     error,
-    totalCraftCost: totals.craftCost,
-    totalBuyCostHQ: totals.buyCostHQ,
+    grandTotalCraftCost: grandTotals.craftCost,
+    grandTotalBuyCostHQ: grandTotals.buyCostHQ,
     refresh,
   };
 }
