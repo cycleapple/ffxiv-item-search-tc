@@ -2,10 +2,28 @@
 import FlexSearch from 'flexsearch';
 import type { Item, SearchFilters, SearchResult } from '../types';
 
+// Multilingual names type
+interface MultilingualNames {
+  [itemId: string]: {
+    en?: string;
+    ja?: string;
+    cn?: string;
+  };
+}
+
 // FlexSearch index for items - using any to handle the dynamic nature of FlexSearch
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let itemIndex: any = null;
 let itemsMap: Map<number, Item> = new Map();
+let multilingualNames: MultilingualNames = {};
+
+/**
+ * Set multilingual names data for search
+ */
+export function setMultilingualNames(names: MultilingualNames): void {
+  multilingualNames = names;
+  console.log(`Loaded ${Object.keys(names).length} multilingual name entries`);
+}
 
 /**
  * Initialize the search index with items data
@@ -23,10 +41,20 @@ export function initializeSearchIndex(items: Record<number, Item>): void {
     Object.entries(items).map(([id, item]) => [parseInt(id), item as Item])
   );
 
-  // Add items to index
+  // Add items to index - include all language names for search
   for (const [id, item] of itemsMap) {
-    // Index both name and description
-    itemIndex.add(id, `${item.name} ${item.description || ''}`);
+    // Build search text with all available names
+    const searchParts = [item.name, item.description || ''];
+
+    // Add multilingual names if available
+    const multiNames = multilingualNames[id];
+    if (multiNames) {
+      if (multiNames.en) searchParts.push(multiNames.en);
+      if (multiNames.ja) searchParts.push(multiNames.ja);
+      if (multiNames.cn) searchParts.push(multiNames.cn);
+    }
+
+    itemIndex.add(id, searchParts.join(' '));
   }
 
   console.log(`Search index initialized with ${itemsMap.size} items`);

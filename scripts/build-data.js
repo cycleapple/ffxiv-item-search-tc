@@ -32,6 +32,11 @@ const TEAMCRAFT_MAPS = 'https://raw.githubusercontent.com/ffxiv-teamcraft/ffxiv-
 const CN_QUEST_CSV = 'https://raw.githubusercontent.com/thewakingsands/ffxiv-datamining-cn/master/Quest.csv';
 const CN_CONTENT_FINDER_CSV = 'https://raw.githubusercontent.com/thewakingsands/ffxiv-datamining-cn/master/ContentFinderCondition.csv';
 
+// Multilingual item names from datamining repos
+const ITEM_CSV_EN = 'https://raw.githubusercontent.com/xivapi/ffxiv-datamining/master/csv/en/Item.csv';
+const ITEM_CSV_JA = 'https://raw.githubusercontent.com/xivapi/ffxiv-datamining/master/csv/ja/Item.csv';
+const ITEM_CSV_CN = 'https://raw.githubusercontent.com/thewakingsands/ffxiv-datamining-cn/master/Item.csv';
+
 // DataType enum from Teamcraft (for extracts.json)
 const DataType = {
   CRAFTED_BY: 1,
@@ -1752,6 +1757,116 @@ async function processInstanceCNNames() {
 }
 
 /**
+ * Process multilingual item names (EN, JA, CN)
+ * Creates a mapping file for search across languages
+ */
+async function processMultilingualNames() {
+  console.log('Processing multilingual item names...');
+
+  // Parse multilingual CSVs from remote
+  // EN/JA format: Line 0 = headers, Line 1+ = data
+  // CN format: Line 0 = indices, Line 1 = headers, Line 2 = types, Line 3+ = data
+  const parseRemoteItemCSV = async (url, lang) => {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        console.warn(`Failed to fetch ${lang} items: ${response.status}`);
+        return new Map();
+      }
+      const text = await response.text();
+      const lines = text.split('\n');
+      if (lines.length < 2) return new Map();
+
+      // Determine format by checking first line
+      const firstLine = lines[0];
+      const isCNFormat = firstLine.startsWith('key,') || /^[\d,]+$/.test(firstLine.split(',')[0]);
+
+      let headers, dataStartLine;
+      if (isCNFormat) {
+        // CN format: Line 0 = indices, Line 1 = headers, Line 2+ = data (skip type row if exists)
+        headers = lines[1].split(',').map(h => h.replace(/"/g, '').trim());
+        dataStartLine = 3; // Skip index, header, and type rows
+      } else {
+        // EN/JA format: Line 0 = headers, Line 1+ = data
+        headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+        dataStartLine = 1;
+      }
+
+      const nameIndex = headers.indexOf('Name');
+      const idIndex = headers.indexOf('#');
+
+      if (nameIndex === -1 || idIndex === -1) {
+        console.warn(`Could not find Name or # column in ${lang} CSV (headers: ${headers.slice(0, 10).join(', ')}...)`);
+        return new Map();
+      }
+
+      const names = new Map();
+      for (let i = dataStartLine; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        // Parse CSV line handling quoted strings
+        const values = [];
+        let current = '';
+        let inQuotes = false;
+        for (const char of line) {
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            values.push(current);
+            current = '';
+          } else {
+            current += char;
+          }
+        }
+        values.push(current);
+
+        const id = parseInt(values[idIndex] || '0');
+        const name = (values[nameIndex] || '').trim();
+        if (id > 0 && name) {
+          names.set(id, name);
+        }
+      }
+      console.log(`Loaded ${names.size} ${lang} item names`);
+      return names;
+    } catch (error) {
+      console.warn(`Error fetching ${lang} items:`, error.message);
+      return new Map();
+    }
+  };
+
+  // Fetch all language names in parallel
+  const [enNames, jaNames, cnNames] = await Promise.all([
+    parseRemoteItemCSV(ITEM_CSV_EN, 'EN'),
+    parseRemoteItemCSV(ITEM_CSV_JA, 'JA'),
+    parseRemoteItemCSV(ITEM_CSV_CN, 'CN'),
+  ]);
+
+  // Build combined multilingual names object
+  // Only include items that have at least one non-TC name
+  const multiNames = {};
+  const allIds = new Set([...enNames.keys(), ...jaNames.keys(), ...cnNames.keys()]);
+
+  for (const id of allIds) {
+    const en = enNames.get(id);
+    const ja = jaNames.get(id);
+    const cn = cnNames.get(id);
+
+    // Only add if at least one name exists
+    if (en || ja || cn) {
+      const entry = {};
+      if (en) entry.en = en;
+      if (ja) entry.ja = ja;
+      if (cn) entry.cn = cn;
+      multiNames[id] = entry;
+    }
+  }
+
+  writeFileSync(join(OUTPUT_PATH, 'item-names-multi.json'), JSON.stringify(multiNames));
+  console.log(`Processed ${Object.keys(multiNames).length} items with multilingual names`);
+}
+
+/**
  * Main function
  */
 async function main() {
@@ -1777,6 +1892,7 @@ async function main() {
     await processMapData();
     await processQuestCNNames();
     await processInstanceCNNames();
+    await processMultilingualNames();
     console.log('');
     console.log('Data processing complete!');
   } catch (error) {

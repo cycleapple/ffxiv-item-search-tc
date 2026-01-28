@@ -1,7 +1,7 @@
 // Hook for loading and managing item data
 import { useState, useEffect } from 'react';
 import type { Item, ItemCategory, Recipe, GatheringPoint, ItemSource } from '../types';
-import { initializeSearchIndex } from '../services/searchService';
+import { initializeSearchIndex, setMultilingualNames } from '../services/searchService';
 
 interface ItemData {
   items: Record<number, Item>;
@@ -86,13 +86,14 @@ async function loadAllData(): Promise<void> {
   loadingPromise = (async () => {
     try {
       // Load all JSON data files in parallel
-      const [itemsResponse, recipesResponse, gatheringResponse, sourcesResponse, desynthResultsResponse, tradesResponse] = await Promise.all([
+      const [itemsResponse, recipesResponse, gatheringResponse, sourcesResponse, desynthResultsResponse, tradesResponse, multiNamesResponse] = await Promise.all([
         fetch(`${import.meta.env.BASE_URL}data/items.json`),
         fetch(`${import.meta.env.BASE_URL}data/recipes.json`),
         fetch(`${import.meta.env.BASE_URL}data/gathering.json`),
         fetch(`${import.meta.env.BASE_URL}data/sources.json`),
         fetch(`${import.meta.env.BASE_URL}data/desynth-results.json`),
         fetch(`${import.meta.env.BASE_URL}data/trades.json`),
+        fetch(`${import.meta.env.BASE_URL}data/item-names-multi.json`),
       ]);
 
       if (!itemsResponse.ok) throw new Error('Failed to load items data');
@@ -105,7 +106,13 @@ async function loadAllData(): Promise<void> {
         error: null,
       };
 
-      // Initialize search index
+      // Load multilingual names for search (optional)
+      if (multiNamesResponse.ok) {
+        const multiNamesData = await multiNamesResponse.json();
+        setMultilingualNames(multiNamesData);
+      }
+
+      // Initialize search index (will use multilingual names if loaded)
       initializeSearchIndex(globalItemData.items);
 
       // Recipes (optional, may not exist yet)
