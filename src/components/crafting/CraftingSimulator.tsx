@@ -18,6 +18,7 @@ import { createStatus, simulate } from '../../services/craftingWasm';
 
 import { CrafterStatsForm } from './CrafterStatsForm';
 import { ConsumableSelector, calculateEffectiveStats } from './ConsumableSelector';
+import { HqMaterialSelector, calculateInitialQuality } from './HqMaterialSelector';
 import { StatusDisplay } from './StatusDisplay';
 import { ActionPalette } from './ActionPalette';
 import { RotationBuilder } from './RotationBuilder';
@@ -81,6 +82,9 @@ export function CraftingSimulator() {
   const [rotation, setRotation] = useState<RotationSlot[]>([]);
   const [nextSlotId, setNextSlotId] = useState(1);
   const [simulationError, setSimulationError] = useState<string | null>(null);
+
+  // HQ materials state
+  const [hqMaterials, setHqMaterials] = useState<Record<number, number>>({});
 
   // Load item and recipe data
   useEffect(() => {
@@ -146,8 +150,16 @@ export function CraftingSimulator() {
         };
         const status = await createStatus(crafterAttrs, craftingRecipe);
 
-        setInitialStatus(status);
-        setCraftingStatus(status);
+        // Calculate and apply initial quality from HQ materials
+        const maxQuality = craftingRecipe.quality;
+        const startQuality = calculateInitialQuality(recipe, hqMaterials, maxQuality);
+        const statusWithStartQuality: CraftingStatus = {
+          ...status,
+          quality: startQuality,
+        };
+
+        setInitialStatus(statusWithStartQuality);
+        setCraftingStatus(statusWithStartQuality);
         setRotation([]);
         setNextSlotId(1);
         setSimulationError(null);
@@ -158,7 +170,7 @@ export function CraftingSimulator() {
     };
 
     initStatus();
-  }, [recipe, recipeLevels, stats.level, effectiveStats.craftsmanship, effectiveStats.control, effectiveStats.craft_points, itemsLoading]);
+  }, [recipe, recipeLevels, stats.level, effectiveStats.craftsmanship, effectiveStats.control, effectiveStats.craft_points, itemsLoading, hqMaterials]);
 
   // Re-simulate when rotation changes
   useEffect(() => {
@@ -313,6 +325,15 @@ export function CraftingSimulator() {
             consumables={craftingConsumables}
             onChange={setCraftingConsumables}
           />
+          {recipe && !itemsLoading && (
+            <HqMaterialSelector
+              recipe={recipe}
+              items={items}
+              hqMaterials={hqMaterials}
+              onHqMaterialsChange={setHqMaterials}
+              maxQuality={recipe.quality || 0}
+            />
+          )}
           <StatusDisplay status={craftingStatus} />
         </div>
 

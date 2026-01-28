@@ -111,6 +111,8 @@ export interface Recipe {
   durability?: number;
   // Master recipe book requirement
   secretRecipeBook?: number;  // Item ID of required master book
+  // Material quality factor (determines HQ ingredient quality contribution)
+  materialQualityFactor?: number;
 }
 
 export interface RecipeIngredient {

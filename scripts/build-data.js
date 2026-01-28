@@ -601,6 +601,7 @@ async function processRecipes() {
     const difficultyFactor = parseInt(recipe['DifficultyFactor'] || '100');
     const qualityFactor = parseInt(recipe['QualityFactor'] || '100');
     const durabilityFactor = parseInt(recipe['DurabilityFactor'] || '100');
+    const materialQualityFactor = parseInt(recipe['MaterialQualityFactor'] || '0');
 
     // Calculate actual values by applying factors to recipe level base values
     const difficulty = levelDetails?.difficulty ? Math.floor(levelDetails.difficulty * difficultyFactor / 100) : undefined;
@@ -626,6 +627,8 @@ async function processRecipes() {
       durability,
       // Master recipe book requirement (item ID)
       secretRecipeBook: secretRecipeBook || undefined,
+      // Material quality factor (for HQ ingredient quality contribution)
+      materialQualityFactor: materialQualityFactor > 0 ? materialQualityFactor : undefined,
     };
 
     if (secretRecipeBook) masterBookCount++;
