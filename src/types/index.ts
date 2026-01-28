@@ -20,6 +20,8 @@ export interface Item {
   patch?: string;
   // Equipment stats (only for equippable items)
   equipStats?: EquipmentStats;
+  // Food/medicine effects (for consumables)
+  foodEffects?: FoodEffects;
 }
 
 // Equipment stats for weapons and armor
@@ -54,6 +56,22 @@ export interface ItemStat {
   id: number;
   name: string;
   value: number;
+}
+
+// Food/medicine effects for consumables
+export interface FoodEffects {
+  expBonus: number;           // EXP bonus percentage (e.g., 3 = 3%)
+  bonuses: FoodBonus[];       // Stat bonuses
+}
+
+export interface FoodBonus {
+  paramId: number;            // BaseParam ID
+  paramName: string;          // Localized stat name
+  isRelative: boolean;        // True = percentage, False = flat value
+  value: number;              // NQ value (percentage or flat)
+  max: number;                // NQ max cap
+  valueHq: number;            // HQ value
+  maxHq: number;              // HQ max cap
 }
 
 export interface ItemCategory {

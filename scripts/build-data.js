@@ -203,6 +203,8 @@ async function processItems() {
   const baseParams = await parseCSV(join(DATA_REPO_PATH, 'csv', 'BaseParam.csv'));
   const classJobs = await parseCSV(join(DATA_REPO_PATH, 'csv', 'ClassJob.csv'));
   const classJobCategories = await parseCSV(join(DATA_REPO_PATH, 'csv', 'ClassJobCategory.csv'));
+  const itemActions = await parseCSV(join(DATA_REPO_PATH, 'csv', 'ItemAction.csv'));
+  const itemFoods = await parseCSV(join(DATA_REPO_PATH, 'csv', 'ItemFood.csv'));
 
   // Fetch patch data from Teamcraft
   console.log('Fetching patch data...');
@@ -232,6 +234,63 @@ async function processItems() {
     }
   });
   console.log(`Loaded ${baseParamMap.size} base params`);
+
+  // Build ItemFood map (ID -> food bonus data)
+  // ItemFood columns: EXPBonus%, BaseParam[0-2], IsRelative[0-2], Value[0-2], Max[0-2], Value{HQ}[0-2], Max{HQ}[0-2]
+  const itemFoodMap = new Map();
+  itemFoods.forEach((food) => {
+    const id = parseInt(food['#'] || food.key || '0');
+    if (id < 0) return;
+
+    const expBonus = parseInt(food['EXPBonus%'] || '0');
+    const bonuses = [];
+
+    // Parse up to 3 bonus effects
+    for (let i = 0; i < 3; i++) {
+      const paramId = parseInt(food[`BaseParam[${i}]`] || '0');
+      if (paramId <= 0) continue;
+
+      const isRelative = food[`IsRelative[${i}]`] === 'True';
+      const value = parseInt(food[`Value[${i}]`] || '0');
+      const max = parseInt(food[`Max[${i}]`] || '0');
+      const valueHq = parseInt(food[`Value{HQ}[${i}]`] || '0');
+      const maxHq = parseInt(food[`Max{HQ}[${i}]`] || '0');
+
+      if (value > 0 || valueHq > 0) {
+        bonuses.push({
+          paramId,
+          paramName: baseParamMap.get(paramId) || `屬性${paramId}`,
+          isRelative,
+          value,
+          max,
+          valueHq,
+          maxHq,
+        });
+      }
+    }
+
+    if (expBonus > 0 || bonuses.length > 0) {
+      itemFoodMap.set(id, { expBonus, bonuses });
+    }
+  });
+  console.log(`Loaded ${itemFoodMap.size} food effects`);
+
+  // Build ItemAction -> ItemFood map (for food types 844=food, 845=medicine)
+  // ItemAction Data[1] contains the ItemFood ID for these types
+  const itemActionToFoodMap = new Map();
+  itemActions.forEach((action) => {
+    const id = parseInt(action['#'] || action.key || '0');
+    const type = parseInt(action['Type'] || '0');
+
+    // Type 844 = food, Type 845 = medicine (both use ItemFood)
+    if (type === 844 || type === 845) {
+      const itemFoodId = parseInt(action['Data[1]'] || '0');
+      if (itemFoodId > 0 && itemFoodMap.has(itemFoodId)) {
+        itemActionToFoodMap.set(id, itemFoodId);
+      }
+    }
+  });
+  console.log(`Linked ${itemActionToFoodMap.size} items to food effects`);
 
   // Build ClassJob map (ID -> abbreviation)
   const classJobMap = new Map();
@@ -295,6 +354,7 @@ async function processItems() {
   const itemsOutput = {};
   let count = 0;
   let equipCount = 0;
+  let foodCount = 0;
 
   items.forEach((item) => {
     const id = parseInt(item['#'] || item.key || '0');
@@ -422,6 +482,20 @@ async function processItems() {
       equipCount++;
     }
 
+    // Add food effects for consumables (food category 46, medicine category 44)
+    const itemActionId = parseInt(item['ItemAction'] || '0');
+    if (itemActionId > 0 && itemActionToFoodMap.has(itemActionId)) {
+      const foodId = itemActionToFoodMap.get(itemActionId);
+      const foodData = itemFoodMap.get(foodId);
+      if (foodData) {
+        itemData.foodEffects = {
+          expBonus: foodData.expBonus,
+          bonuses: foodData.bonuses,
+        };
+        foodCount++;
+      }
+    }
+
     itemsOutput[id] = itemData;
     count++;
   });
@@ -439,7 +513,7 @@ async function processItems() {
   };
 
   writeFileSync(join(OUTPUT_PATH, 'items.json'), JSON.stringify(output));
-  console.log(`Processed ${count} items (${equipCount} with equipment stats), ${usedCategories.length} categories`);
+  console.log(`Processed ${count} items (${equipCount} with equipment stats, ${foodCount} with food effects), ${usedCategories.length} categories`);
 }
 
 /**

@@ -11,6 +11,7 @@ import { CraftingPriceTree } from './CraftingPriceTree';
 import { UsedForView } from './UsedForView';
 import { CopyButton } from './CopyButton';
 import { EquipmentStatsView } from './EquipmentStatsView';
+import { FoodEffectsView } from './FoodEffectsView';
 import { AddToPriceListButton } from './AddToPriceListButton';
 import { useState, useEffect } from 'react';
 import { useSettings, type TabType } from '../hooks/useSettings';
@@ -242,6 +243,16 @@ export function ItemDetail() {
             canBeHq={item.canBeHq}
             equipLevel={item.equipLevel}
             itemLevel={item.itemLevel}
+          />
+        </div>
+      )}
+
+      {/* Food Effects */}
+      {item.foodEffects && (
+        <div className="mb-6">
+          <FoodEffectsView
+            foodEffects={item.foodEffects}
+            canBeHq={item.canBeHq}
           />
         </div>
       )}
