@@ -408,17 +408,17 @@ export function FilterPanel({ filters, categories, onFilterChange, onReset }: Fi
                         <button
                           key={job.abbr}
                           onClick={() => toggleJob(job.abbr)}
-                          className={`flex items-center justify-center w-8 h-8 rounded transition-all ${
+                          className={`w-7 h-7 rounded overflow-hidden transition-all ${
                             isSelected
-                              ? 'bg-[var(--ffxiv-accent)] ring-2 ring-[var(--ffxiv-accent)]'
-                              : 'bg-[var(--ffxiv-bg-tertiary)] hover:bg-[var(--ffxiv-card-hover)] opacity-60 hover:opacity-100'
+                              ? 'ring-2 ring-[var(--ffxiv-accent)] ring-offset-1 ring-offset-[var(--ffxiv-bg)]'
+                              : 'opacity-50 hover:opacity-100'
                           }`}
                           title={job.name}
                         >
                           <img
                             src={getJobIconUrl(job.abbr)}
                             alt={job.name}
-                            className="w-6 h-6 object-contain"
+                            className="w-full h-full"
                             onError={(e) => {
                               (e.target as HTMLImageElement).style.display = 'none';
                             }}
