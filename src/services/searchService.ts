@@ -80,7 +80,8 @@ export function searchItems(filters: SearchFilters, limit = 100): SearchResultWi
   let results: Item[];
 
   if (filters.query.trim()) {
-    const query = filters.query.trim().toLowerCase();
+    // Normalize query for better Unicode matching (handles different input methods)
+    const query = filters.query.trim().toLowerCase().normalize('NFC');
 
     // Search by query using FlexSearch
     const searchResults = itemIndex.search(filters.query, { limit: 5000 }) as number[];
@@ -95,9 +96,9 @@ export function searchItems(filters: SearchFilters, limit = 100): SearchResultWi
     for (const [id, item] of itemsMap) {
       if (flexSearchIds.has(id)) continue; // Already in results
 
-      // Check TC name and description
-      if (item.name.toLowerCase().includes(query) ||
-          (item.description && item.description.toLowerCase().includes(query))) {
+      // Check TC name and description (normalize for Unicode compatibility)
+      if (item.name.toLowerCase().normalize('NFC').includes(query) ||
+          (item.description && item.description.toLowerCase().normalize('NFC').includes(query))) {
         results.push(item);
         continue;
       }
@@ -105,9 +106,9 @@ export function searchItems(filters: SearchFilters, limit = 100): SearchResultWi
       // Check multilingual names
       const multiNames = multilingualNames[id];
       if (multiNames) {
-        if ((multiNames.en && multiNames.en.toLowerCase().includes(query)) ||
-            (multiNames.ja && multiNames.ja.toLowerCase().includes(query)) ||
-            (multiNames.cn && multiNames.cn.toLowerCase().includes(query))) {
+        if ((multiNames.en && multiNames.en.toLowerCase().normalize('NFC').includes(query)) ||
+            (multiNames.ja && multiNames.ja.toLowerCase().normalize('NFC').includes(query)) ||
+            (multiNames.cn && multiNames.cn.toLowerCase().normalize('NFC').includes(query))) {
           results.push(item);
         }
       }
