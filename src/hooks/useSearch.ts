@@ -1,5 +1,5 @@
 // Hook for search functionality
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import type { SearchFilters, SearchResult } from '../types';
 import { searchItems } from '../services/searchService';
 
@@ -20,14 +20,19 @@ const DEFAULT_FILTERS: SearchFilters = {
   patch: null,
 };
 
+const PAGE_SIZE = 100;
+
 interface UseSearchReturn {
   filters: SearchFilters;
   results: SearchResult[];
+  totalResults: number;
   isSearching: boolean;
   hasSearched: boolean;  // Whether user has initiated a search
+  hasMore: boolean;      // Whether there are more results to load
   updateQuery: (query: string) => void;
   updateFilters: (updates: Partial<SearchFilters>) => void;
   resetFilters: () => void;
+  loadMore: () => void;
 }
 
 // Check if any filter is active (not default)
@@ -52,6 +57,7 @@ function hasActiveFilters(filters: SearchFilters): boolean {
 export function useSearch(): UseSearchReturn {
   const [filters, setFilters] = useState<SearchFilters>(DEFAULT_FILTERS);
   const [isSearching, setIsSearching] = useState(false);
+  const [displayLimit, setDisplayLimit] = useState(PAGE_SIZE);
 
   const updateQuery = useCallback((query: string) => {
     setFilters(prev => ({ ...prev, query }));
@@ -65,27 +71,41 @@ export function useSearch(): UseSearchReturn {
     setFilters(DEFAULT_FILTERS);
   }, []);
 
+  // Reset display limit when filters change
+  useEffect(() => {
+    setDisplayLimit(PAGE_SIZE);
+  }, [filters]);
+
   // Check if user has searched (has any active filter)
   const hasSearched = useMemo(() => hasActiveFilters(filters), [filters]);
 
   // Memoized search results - only search if there are active filters
-  const results = useMemo(() => {
+  const searchData = useMemo(() => {
     if (!hasSearched) {
-      return [];
+      return { results: [], total: 0 };
     }
     setIsSearching(true);
-    const searchResults = searchItems(filters, 100);
+    const data = searchItems(filters, displayLimit);
     setIsSearching(false);
-    return searchResults;
-  }, [filters, hasSearched]);
+    return data;
+  }, [filters, hasSearched, displayLimit]);
+
+  const loadMore = useCallback(() => {
+    setDisplayLimit(prev => prev + PAGE_SIZE);
+  }, []);
+
+  const hasMore = searchData.total > searchData.results.length;
 
   return {
     filters,
-    results,
+    results: searchData.results,
+    totalResults: searchData.total,
     isSearching,
     hasSearched,
+    hasMore,
     updateQuery,
     updateFilters,
     resetFilters,
+    loadMore,
   };
 }

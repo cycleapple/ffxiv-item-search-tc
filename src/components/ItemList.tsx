@@ -4,11 +4,21 @@ import { ItemCard } from './ItemCard';
 
 interface ItemListProps {
   results: SearchResult[];
+  totalResults?: number;
   loading?: boolean;
   hasSearched?: boolean;  // Whether user has initiated a search
+  hasMore?: boolean;      // Whether there are more results to load
+  onLoadMore?: () => void;
 }
 
-export function ItemList({ results, loading, hasSearched = true }: ItemListProps) {
+export function ItemList({
+  results,
+  totalResults,
+  loading,
+  hasSearched = true,
+  hasMore = false,
+  onLoadMore,
+}: ItemListProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -75,16 +85,33 @@ export function ItemList({ results, loading, hasSearched = true }: ItemListProps
     );
   }
 
+  const total = totalResults ?? results.length;
+  const displayCount = results.length;
+
   return (
     <div className="space-y-2">
       <div className="text-sm text-[var(--ffxiv-muted)] mb-3">
-        找到 {results.length} 個物品
+        {hasMore ? (
+          <>顯示 {displayCount} / {total} 個物品</>
+        ) : (
+          <>找到 {total} 個物品</>
+        )}
       </div>
       <div className="grid gap-2">
         {results.map((result) => (
           <ItemCard key={result.item.id} item={result.item} />
         ))}
       </div>
+      {hasMore && onLoadMore && (
+        <div className="pt-4 text-center">
+          <button
+            onClick={onLoadMore}
+            className="px-6 py-2 bg-[var(--ffxiv-accent)] hover:bg-[var(--ffxiv-accent-hover)] text-white rounded-lg transition-colors"
+          >
+            載入更多 ({total - displayCount} 個剩餘)
+          </button>
+        </div>
+      )}
     </div>
   );
 }

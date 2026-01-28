@@ -33,19 +33,27 @@ export function initializeSearchIndex(items: Record<number, Item>): void {
 }
 
 /**
+ * Search result with total count for pagination
+ */
+export interface SearchResultWithTotal {
+  results: SearchResult[];
+  total: number;
+}
+
+/**
  * Search for items matching the query and filters
  */
-export function searchItems(filters: SearchFilters, limit = 100): SearchResult[] {
+export function searchItems(filters: SearchFilters, limit = 100): SearchResultWithTotal {
   if (!itemIndex || itemsMap.size === 0) {
     console.warn('Search index not initialized');
-    return [];
+    return { results: [], total: 0 };
   }
 
   let results: Item[];
 
   if (filters.query.trim()) {
     // Search by query
-    const searchResults = itemIndex.search(filters.query, { limit: 1000 }) as number[];
+    const searchResults = itemIndex.search(filters.query, { limit: 5000 }) as number[];
     results = searchResults
       .map((id: number) => itemsMap.get(id))
       .filter((item): item is Item => item !== undefined);
@@ -138,11 +146,16 @@ export function searchItems(filters: SearchFilters, limit = 100): SearchResult[]
     return b.itemLevel - a.itemLevel;
   });
 
+  const total = results.length;
+
   // Limit results
-  return results.slice(0, limit).map(item => ({
-    item,
-    score: 1, // FlexSearch doesn't provide scores in this version
-  }));
+  return {
+    results: results.slice(0, limit).map(item => ({
+      item,
+      score: 1, // FlexSearch doesn't provide scores in this version
+    })),
+    total,
+  };
 }
 
 /**
