@@ -523,6 +523,16 @@ async function processRecipes() {
     // Get recipe level details
     const levelDetails = recipeLevelMap.get(recipeLevelId);
 
+    // Get factors from recipe (default to 100 if not specified)
+    const difficultyFactor = parseInt(recipe['DifficultyFactor'] || '100');
+    const qualityFactor = parseInt(recipe['QualityFactor'] || '100');
+    const durabilityFactor = parseInt(recipe['DurabilityFactor'] || '100');
+
+    // Calculate actual values by applying factors to recipe level base values
+    const difficulty = levelDetails?.difficulty ? Math.floor(levelDetails.difficulty * difficultyFactor / 100) : undefined;
+    const quality = levelDetails?.quality ? Math.floor(levelDetails.quality * qualityFactor / 100) : undefined;
+    const durability = levelDetails?.durability ? Math.floor(levelDetails.durability * durabilityFactor / 100) : undefined;
+
     const recipeData = {
       id,
       itemId,
@@ -535,11 +545,11 @@ async function processRecipes() {
       // Crafting requirements
       requiredCraftsmanship: parseInt(recipe['RequiredCraftsmanship'] || '0') || undefined,
       requiredControl: parseInt(recipe['RequiredControl'] || '0') || undefined,
-      // Recipe level details
+      // Recipe level details (with factors applied)
       classJobLevel: levelDetails?.classJobLevel || undefined,
-      difficulty: levelDetails?.difficulty || undefined,
-      quality: levelDetails?.quality || undefined,
-      durability: levelDetails?.durability || undefined,
+      difficulty,
+      quality,
+      durability,
       // Master recipe book requirement (item ID)
       secretRecipeBook: secretRecipeBook || undefined,
     };

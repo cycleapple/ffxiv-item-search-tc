@@ -29,8 +29,7 @@ export async function loadWasm(): Promise<typeof import('../wasm/app_wasm')> {
 
   wasmInitPromise = (async () => {
     const wasm = await import('../wasm/app_wasm');
-    // Initialize the WASM module (web target requires explicit init)
-    await wasm.default();
+    // Bundler target auto-initializes via __wbindgen_start()
     wasmModule = wasm;
     return wasm;
   })();

@@ -19,9 +19,9 @@ export default defineConfig({
   },
   worker: {
     format: 'es',
-    plugins: () => [wasm(), topLevelAwait()],
+    plugins: () => [wasm()],
   },
   optimizeDeps: {
-    exclude: ['@ffxiv-craft/wasm'],
+    // Let Vite handle WASM optimization
   },
 })
