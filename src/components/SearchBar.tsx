@@ -10,17 +10,28 @@ interface SearchBarProps {
 export function SearchBar({ value, onChange, placeholder = '搜尋物品...' }: SearchBarProps) {
   const [localValue, setLocalValue] = useState(value);
   const isComposingRef = useRef(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Function to trigger debounced search
+  const triggerSearch = useCallback((searchValue: string) => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+    }
+    timerRef.current = setTimeout(() => {
+      onChange(searchValue);
+    }, 150);
+  }, [onChange]);
 
   // Debounce the search - only trigger when not composing
   useEffect(() => {
     if (isComposingRef.current) return;
-
-    const timer = setTimeout(() => {
-      onChange(localValue);
-    }, 150);
-
-    return () => clearTimeout(timer);
-  }, [localValue, onChange]);
+    triggerSearch(localValue);
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, [localValue, triggerSearch]);
 
   // Sync with external value changes - but not during composition
   useEffect(() => {
@@ -59,7 +70,10 @@ export function SearchBar({ value, onChange, placeholder = '搜尋物品...' }: 
         onCompositionEnd={(e) => {
           isComposingRef.current = false;
           // Trigger search after composition ends
-          setLocalValue((e.target as HTMLInputElement).value);
+          const finalValue = (e.target as HTMLInputElement).value;
+          setLocalValue(finalValue);
+          // Trigger debounced search since useEffect might not re-run if value unchanged
+          triggerSearch(finalValue);
         }}
         placeholder={placeholder}
         className="w-full pl-10 pr-10 py-3 bg-[var(--ffxiv-bg-tertiary)] border border-[var(--ffxiv-border)] rounded-lg text-[var(--ffxiv-text)] placeholder-[var(--ffxiv-muted)] focus:outline-none focus:border-[var(--ffxiv-accent)] transition-colors"
