@@ -53,9 +53,9 @@ function BuffDisplay({ buffs }: { buffs: CraftingBuffs }) {
   if (buffs.manipulation > 0) activeBuffs.push({ name: '掌握', value: buffs.manipulation });
   if (buffs.wast_not > 0) activeBuffs.push({ name: '儉約', value: buffs.wast_not });
   if (buffs.observed > 0) activeBuffs.push({ name: '觀察', value: buffs.observed });
-  if (buffs.expedience > 0) activeBuffs.push({ name: '儉約II', value: buffs.expedience });
+  if (buffs.expedience > 0) activeBuffs.push({ name: '長期儉約', value: buffs.expedience });
   if (buffs.heart_and_soul === 'Active' as LimitedActionState) activeBuffs.push({ name: '專心致志', value: '!' });
-  if (buffs.trained_perfection === 'Active' as LimitedActionState) activeBuffs.push({ name: '巧奪天工', value: '!' });
+  if (buffs.trained_perfection === 'Active' as LimitedActionState) activeBuffs.push({ name: '工匠的絕技', value: '!' });
 
   if (activeBuffs.length === 0) {
     return <div className="text-xs text-[var(--ffxiv-muted)]">無增益效果</div>;
