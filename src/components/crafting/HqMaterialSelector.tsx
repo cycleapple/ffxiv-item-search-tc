@@ -12,29 +12,38 @@ interface HqMaterialSelectorProps {
 }
 
 // Calculate initial quality from HQ materials
-// Formula: (total HQ count / total ingredient count) * maxQuality * materialQualityFactor / 100
+// Formula matches BestCraft: weight each ingredient by item level
+// ratio = sum(hqCount * itemLevel) / sum(totalCount * itemLevel) for HQ-able items only
+// initialQuality = floor(maxQuality * materialQualityFactor / 100 * ratio)
 export function calculateInitialQuality(
   recipe: Recipe,
   hqMaterials: Record<number, number>,
-  maxQuality: number
+  maxQuality: number,
+  items?: Record<number, Item>
 ): number {
   const materialQualityFactor = recipe.materialQualityFactor || 0;
   if (materialQualityFactor === 0) return 0;
 
-  // Count total ingredients and HQ ingredients
-  let totalIngredients = 0;
-  let hqIngredients = 0;
+  let totalLevelCount = 0;
+  let hqLevelCount = 0;
 
   recipe.ingredients.forEach((ing) => {
-    totalIngredients += ing.amount;
-    hqIngredients += Math.min(hqMaterials[ing.itemId] || 0, ing.amount);
+    const item = items?.[ing.itemId];
+    // Only count HQ-able items (skip crystals etc.)
+    if (item && !item.canBeHq) return;
+    if (ing.itemId >= 2 && ing.itemId <= 19) return; // crystals
+
+    const level = item?.itemLevel || 1;
+    const hqCount = Math.min(hqMaterials[ing.itemId] || 0, ing.amount);
+
+    totalLevelCount += ing.amount * level;
+    hqLevelCount += hqCount * level;
   });
 
-  if (totalIngredients === 0) return 0;
+  if (totalLevelCount === 0) return 0;
 
-  // Calculate initial quality
-  const qualityRatio = hqIngredients / totalIngredients;
-  return Math.floor(maxQuality * materialQualityFactor / 100 * qualityRatio);
+  const ratio = hqLevelCount / totalLevelCount;
+  return Math.floor(maxQuality * materialQualityFactor / 100 * ratio);
 }
 
 export function HqMaterialSelector({
@@ -57,7 +66,7 @@ export function HqMaterialSelector({
     });
   }, [recipe.ingredients, items]);
 
-  const initialQuality = calculateInitialQuality(recipe, hqMaterials, maxQuality);
+  const initialQuality = calculateInitialQuality(recipe, hqMaterials, maxQuality, items);
   const materialQualityFactor = recipe.materialQualityFactor || 0;
 
   // No HQ-able materials

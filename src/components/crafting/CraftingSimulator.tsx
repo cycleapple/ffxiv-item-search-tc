@@ -160,7 +160,7 @@ export function CraftingSimulator() {
 
         // Calculate and apply initial quality from HQ materials
         const maxQuality = craftingRecipe.quality;
-        const startQuality = calculateInitialQuality(recipe, hqMaterials, maxQuality);
+        const startQuality = calculateInitialQuality(recipe, hqMaterials, maxQuality, items);
         const statusWithStartQuality: CraftingStatus = {
           ...status,
           quality: startQuality,
