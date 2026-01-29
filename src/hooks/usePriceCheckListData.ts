@@ -287,7 +287,7 @@ export function usePriceCheckListData(
   showCrystals: boolean,
   qualityFilter: QualityFilter
 ): UsePriceCheckListDataReturn {
-  const [items, setItems] = useState<PriceCheckListItemData[]>([]);
+  const [prices, setPrices] = useState<Record<number, MarketData>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -296,9 +296,13 @@ export function usePriceCheckListData(
     setRefreshTrigger(prev => prev + 1);
   }, []);
 
+  // Stable key for item IDs only (not quantities) to avoid refetching on quantity change
+  const listItemIds = useMemo(() => list.map(l => l.itemId).sort().join(','), [list]);
+
+  // Fetch prices only when item IDs, crystals filter, or quality filter change
   useEffect(() => {
     if (list.length === 0) {
-      setItems([]);
+      setPrices({});
       return;
     }
 
@@ -309,64 +313,25 @@ export function usePriceCheckListData(
       setError(null);
 
       try {
-        // Build trees for all items
-        const trees: { listItem: PriceCheckListItem; tree: CraftingTreeNode | null }[] = [];
-
+        // Build trees with quantity=1 just to collect all item IDs
+        const allTreeIds: Set<number> = new Set();
         for (const listItem of list) {
-          const tree = buildTreeStructure(listItem.itemId, listItem.quantity, new Set(), 0, showCrystals);
-          trees.push({ listItem, tree });
-        }
-
-        // Collect all item IDs from all trees
-        const allIds = Array.from(collectAllItemIdsFromTrees(trees.map(t => t.tree)));
-
-        // Fetch prices for all items at once
-        const prices = await getMultipleMarketData(allIds, DATA_CENTER);
-
-        if (cancelled) return;
-
-        // Apply prices and calculate costs
-        const result: PriceCheckListItemData[] = trees.map(({ listItem, tree }) => {
-          const item = getItemById(listItem.itemId) ?? null;
-
+          const tree = buildTreeStructure(listItem.itemId, 1, new Set(), 0, showCrystals);
           if (tree) {
-            applyPrices(tree, prices);
-            calculateCosts(tree);
-            const totals = calculateTotals(tree);
-
-            return {
-              listItem,
-              item,
-              tree,
-              totalCraftCost: totals.craftCost,
-              totalBuyCostHQ: totals.buyCostHQ,
-            };
-          }
-
-          // No tree - just get HQ market price for comparison
-          const priceData = prices[listItem.itemId];
-          let buyCostHQ = 0;
-          if (priceData) {
-            const hqResult = findCheapestHQ(priceData);
-            if (hqResult.price !== null) {
-              buyCostHQ = hqResult.price * listItem.quantity;
+            for (const id of collectAllItemIdsFromTrees([tree])) {
+              allTreeIds.add(id);
             }
           }
+        }
 
-          return {
-            listItem,
-            item,
-            tree: null,
-            totalCraftCost: 0,
-            totalBuyCostHQ: buyCostHQ,
-          };
-        });
+        const fetchedPrices = await getMultipleMarketData(Array.from(allTreeIds), DATA_CENTER);
 
-        setItems(result);
+        if (cancelled) return;
+        setPrices(fetchedPrices);
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : '發生錯誤');
-          setItems([]);
+          setPrices({});
         }
       } finally {
         if (!cancelled) {
@@ -380,7 +345,50 @@ export function usePriceCheckListData(
     return () => {
       cancelled = true;
     };
-  }, [list, showCrystals, qualityFilter, refreshTrigger]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listItemIds, showCrystals, qualityFilter, refreshTrigger]);
+
+  // Build trees and apply prices (runs on quantity change without refetching)
+  const items = useMemo<PriceCheckListItemData[]>(() => {
+    if (list.length === 0 || Object.keys(prices).length === 0) return [];
+
+    return list.map(listItem => {
+      const item = getItemById(listItem.itemId) ?? null;
+      const tree = buildTreeStructure(listItem.itemId, listItem.quantity, new Set(), 0, showCrystals);
+
+      if (tree) {
+        applyPrices(tree, prices);
+        calculateCosts(tree);
+        const totals = calculateTotals(tree);
+
+        return {
+          listItem,
+          item,
+          tree,
+          totalCraftCost: totals.craftCost,
+          totalBuyCostHQ: totals.buyCostHQ,
+        };
+      }
+
+      // No tree - just get HQ market price for comparison
+      const priceData = prices[listItem.itemId];
+      let buyCostHQ = 0;
+      if (priceData) {
+        const hqResult = findCheapestHQ(priceData);
+        if (hqResult.price !== null) {
+          buyCostHQ = hqResult.price * listItem.quantity;
+        }
+      }
+
+      return {
+        listItem,
+        item,
+        tree: null,
+        totalCraftCost: 0,
+        totalBuyCostHQ: buyCostHQ,
+      };
+    });
+  }, [list, prices, showCrystals]);
 
   // Calculate grand totals
   const grandTotals = useMemo(() => {

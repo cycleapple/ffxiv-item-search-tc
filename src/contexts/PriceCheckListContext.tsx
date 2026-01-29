@@ -31,6 +31,7 @@ interface PriceCheckListContextValue {
   clearList: () => void;
   isInList: (itemId: number) => boolean;
   toggleItem: (itemId: number) => void;
+  updateQuantity: (itemId: number, quantity: number) => void;
   itemCount: number;
 }
 
@@ -70,6 +71,13 @@ export function PriceCheckListProvider({ children }: { children: ReactNode }) {
     return list.some(item => item.itemId === itemId);
   }, [list]);
 
+  // Update quantity for an item
+  const updateQuantity = useCallback((itemId: number, quantity: number) => {
+    setList(prev => prev.map(item =>
+      item.itemId === itemId ? { ...item, quantity: Math.max(1, quantity) } : item
+    ));
+  }, []);
+
   // Toggle item in list
   const toggleItem = useCallback((itemId: number) => {
     setList(prev => {
@@ -91,8 +99,9 @@ export function PriceCheckListProvider({ children }: { children: ReactNode }) {
     clearList,
     isInList,
     toggleItem,
+    updateQuantity,
     itemCount,
-  }), [list, addItem, removeItem, clearList, isInList, toggleItem, itemCount]);
+  }), [list, addItem, removeItem, clearList, isInList, toggleItem, updateQuantity, itemCount]);
 
   return (
     <PriceCheckListContext.Provider value={value}>

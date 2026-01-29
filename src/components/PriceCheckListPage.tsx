@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { usePriceCheckList } from '../hooks/usePriceCheckList';
 import { usePriceCheckListData, type QualityFilter } from '../hooks/usePriceCheckListData';
+import { useOwnedMaterials } from '../hooks/useOwnedMaterials';
 import { PriceCheckListItemComponent } from './PriceCheckListItem';
 import { PriceCheckTreeView } from './PriceCheckTreeView';
 
@@ -10,8 +11,10 @@ type ViewMode = 'list' | 'tree';
 
 export function PriceCheckListPage() {
   const navigate = useNavigate();
-  const { list, removeItem, clearList } = usePriceCheckList();
+  const { list, removeItem, clearList, updateQuantity } = usePriceCheckList();
+  const { ownedMaterials, setOwned, clearAll: clearOwned } = useOwnedMaterials();
   const [showCrystals, setShowCrystals] = useState(false);
+  const [showOwned, setShowOwned] = useState(false);
   const [qualityFilter, setQualityFilter] = useState<QualityFilter>('both');
   const [viewMode, setViewMode] = useState<ViewMode>('tree');
 
@@ -112,6 +115,17 @@ export function PriceCheckListPage() {
               />
               <span className="text-[var(--ffxiv-muted)]">顯示水晶</span>
             </label>
+
+            {/* Show owned toggle */}
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showOwned}
+                onChange={(e) => setShowOwned(e.target.checked)}
+                className="w-4 h-4 rounded border-[var(--ffxiv-border)] bg-[var(--ffxiv-card)] text-[var(--ffxiv-highlight)] focus:ring-[var(--ffxiv-highlight)]"
+              />
+              <span className="text-[var(--ffxiv-muted)]">擁有數量</span>
+            </label>
           </div>
 
           {/* Refresh button */}
@@ -176,6 +190,11 @@ export function PriceCheckListPage() {
               items={items}
               qualityFilter={qualityFilter}
               onRemove={removeItem}
+              ownedMaterials={ownedMaterials}
+              onOwnedChange={setOwned}
+              onOwnedClear={clearOwned}
+              onQuantityChange={updateQuantity}
+              showOwned={showOwned}
             />
           )}
         </>

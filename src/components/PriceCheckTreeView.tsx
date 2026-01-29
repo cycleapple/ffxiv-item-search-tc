@@ -13,7 +13,21 @@ interface PriceCheckTreeViewProps {
   items: PriceCheckListItemData[];
   qualityFilter: QualityFilter;
   onRemove: (itemId: number) => void;
+  ownedMaterials: Record<number, number>;
+  onOwnedChange: (itemId: number, quantity: number) => void;
+  onOwnedClear: () => void;
+  onQuantityChange: (itemId: number, quantity: number) => void;
+  showOwned: boolean;
 }
+
+type MaterialStatus = 'green' | 'yellow' | 'red' | 'gray';
+
+const STATUS_COLORS: Record<MaterialStatus, { border: string; bar: string; opacity?: string }> = {
+  green: { border: 'border-green-500', bar: 'bg-green-500' },
+  yellow: { border: 'border-yellow-500', bar: 'bg-yellow-500' },
+  red: { border: 'border-red-500', bar: 'bg-red-500' },
+  gray: { border: 'border-gray-600', bar: 'bg-gray-600', opacity: 'opacity-60' },
+};
 
 interface AggregatedMaterial {
   item: Item;
@@ -56,9 +70,15 @@ function collectMaterials(
   rootItemId: number,
   rootItemName: string,
   materials: Map<number, AggregatedMaterial>,
-  depth: number
+  depth: number,
+  childrenMap: Map<number, Map<number, number>>
 ): void {
   for (const child of node.children) {
+    // Track parent -> child relationship with per-parent quantity
+    if (!childrenMap.has(directParentId)) childrenMap.set(directParentId, new Map());
+    const parentMap = childrenMap.get(directParentId)!;
+    parentMap.set(child.item.id, (parentMap.get(child.item.id) ?? 0) + child.quantity);
+
     const existing = materials.get(child.item.id);
 
     if (existing) {
@@ -78,8 +98,8 @@ function collectMaterials(
       if (!existing.directParents.some(p => p.parentId === directParentId && p.rootId === rootItemId)) {
         existing.directParents.push({ parentId: directParentId, rootId: rootItemId });
       }
-      // Keep the minimum depth (closest to root)
-      existing.depth = Math.min(existing.depth, depth);
+      // Keep the maximum depth (show at deepest usage level)
+      existing.depth = Math.max(existing.depth, depth);
     } else {
       // Add new material
       materials.set(child.item.id, {
@@ -103,7 +123,7 @@ function collectMaterials(
     }
 
     // Recursively collect from children - pass this material as the direct parent
-    collectMaterials(child, child.item.id, rootItemId, rootItemName, materials, depth + 1);
+    collectMaterials(child, child.item.id, rootItemId, rootItemName, materials, depth + 1, childrenMap);
   }
 }
 
@@ -143,7 +163,7 @@ function getRarityClass(rarity: number): string {
   }
 }
 
-export function PriceCheckTreeView({ items, qualityFilter, onRemove }: PriceCheckTreeViewProps) {
+export function PriceCheckTreeView({ items, qualityFilter, onRemove, ownedMaterials, onOwnedChange, onOwnedClear, onQuantityChange, showOwned }: PriceCheckTreeViewProps) {
   const [showLines, setShowLines] = useState(false);
   const [selectedRootIds, setSelectedRootIds] = useState<Set<number>>(new Set());
   const containerRef = useRef<HTMLDivElement>(null);
@@ -153,10 +173,12 @@ export function PriceCheckTreeView({ items, qualityFilter, onRemove }: PriceChec
   const [refsVersion, setRefsVersion] = useState(0);
 
   // Aggregate all materials from all items
-  const { rootItems, materialsByDepth, maxDepth, rootColorMap, allMaterials } = useMemo(() => {
+  const { rootItems, materialsByDepth, maxDepth, rootColorMap, allMaterials, materialChildren, materialParents, displacedDirectMaterials } = useMemo(() => {
     const materials = new Map<number, AggregatedMaterial>();
     const roots: PriceCheckListItemData[] = [];
     const colorMap = new Map<number, string>();
+
+    const childrenMap = new Map<number, Map<number, number>>();
 
     for (let i = 0; i < items.length; i++) {
       const itemData = items[i];
@@ -169,7 +191,8 @@ export function PriceCheckTreeView({ items, qualityFilter, onRemove }: PriceChec
           itemData.item.id,
           itemData.item.name,
           materials,
-          1
+          1,
+          childrenMap
         );
       }
     }
@@ -197,8 +220,104 @@ export function PriceCheckTreeView({ items, qualityFilter, onRemove }: PriceChec
       });
     }
 
-    return { rootItems: roots, materialsByDepth: byDepth, maxDepth: max, rootColorMap: colorMap, allMaterials: materials };
+    // Build child -> parent map (only material parents, not root items)
+    const parents = new Map<number, Set<number>>();
+    // Track materials that are direct children of root but displaced to deeper depth
+    const displaced = new Map<number, AggregatedMaterial>();
+    const rootIds = new Set(roots.map(r => r.item!.id));
+
+    for (const mat of materials.values()) {
+      for (const dp of mat.directParents) {
+        if (materials.has(dp.parentId)) {
+          if (!parents.has(mat.item.id)) parents.set(mat.item.id, new Set());
+          parents.get(mat.item.id)!.add(dp.parentId);
+        }
+        // Direct child of root but displayed at depth > 1
+        if (rootIds.has(dp.parentId) && mat.depth > 1) {
+          displaced.set(mat.item.id, mat);
+        }
+      }
+    }
+
+    return { rootItems: roots, materialsByDepth: byDepth, maxDepth: max, rootColorMap: colorMap, allMaterials: materials, materialChildren: childrenMap, materialParents: parents, displacedDirectMaterials: displaced };
   }, [items]);
+
+  // Compute material statuses based on owned quantities
+  // Allocation strategy: deeper parents get priority for shared materials
+  const materialStatuses = useMemo(() => {
+    const statusMap = new Map<number, MaterialStatus>();
+
+    // Build reverse map: childId -> [{parentId, qty, parentDepth}]
+    const childParentNeeds = new Map<number, { parentId: number; qty: number; parentDepth: number }[]>();
+    for (const [parentId, childMap] of materialChildren) {
+      const parentMat = allMaterials.get(parentId);
+      const parentDepth = parentMat ? parentMat.depth : 0;
+      for (const [childId, qty] of childMap) {
+        if (!childParentNeeds.has(childId)) childParentNeeds.set(childId, []);
+        childParentNeeds.get(childId)!.push({ parentId, qty, parentDepth });
+      }
+    }
+
+    // Check if child has enough remaining after deeper parents take priority
+    function childAllocatedForParent(childId: number, parentDepth: number, qtyNeeded: number): boolean {
+      const childOwned = ownedMaterials[childId] ?? 0;
+      const needs = childParentNeeds.get(childId);
+      if (!needs) return childOwned >= qtyNeeded;
+
+      // Sum needs of strictly deeper parents (they get priority)
+      const deeperNeeds = needs
+        .filter(n => n.parentDepth > parentDepth)
+        .reduce((sum, n) => sum + n.qty, 0);
+
+      return Math.max(0, childOwned - deeperNeeds) >= qtyNeeded;
+    }
+
+    // First: GREEN for fully satisfied materials (owned >= total)
+    for (const [matId, mat] of allMaterials) {
+      if ((ownedMaterials[matId] ?? 0) >= mat.totalQuantity) {
+        statusMap.set(matId, 'green');
+      }
+    }
+
+    // canCraft: all recipe children available via allocation or craftable
+    const canCraftCache = new Map<number, boolean>();
+    function canCraft(matId: number): boolean {
+      if (canCraftCache.has(matId)) return canCraftCache.get(matId)!;
+      canCraftCache.set(matId, false); // prevent cycles
+
+      const childMap = materialChildren.get(matId);
+      if (!childMap || childMap.size === 0) return false;
+
+      const mat = allMaterials.get(matId);
+      const myDepth = mat ? mat.depth : 0;
+
+      const result = Array.from(childMap.entries()).every(([childId, qtyNeeded]) => {
+        if (statusMap.get(childId) === 'green') return true;
+        if (childAllocatedForParent(childId, myDepth, qtyNeeded)) return true;
+        return canCraft(childId);
+      });
+      canCraftCache.set(matId, result);
+      return result;
+    }
+
+    // Second: YELLOW/RED for non-green materials
+    for (const matId of allMaterials.keys()) {
+      if (statusMap.get(matId) === 'green') continue;
+      statusMap.set(matId, canCraft(matId) ? 'yellow' : 'red');
+    }
+
+    // Third: GRAY where all material-parents are green
+    for (const matId of allMaterials.keys()) {
+      const parentSet = materialParents.get(matId);
+      if (parentSet && parentSet.size > 0) {
+        if (Array.from(parentSet).every(p => statusMap.get(p) === 'green')) {
+          statusMap.set(matId, 'gray');
+        }
+      }
+    }
+
+    return statusMap;
+  }, [allMaterials, materialChildren, materialParents, ownedMaterials]);
 
   // Calculate lines for all depths
   const updateLines = useCallback(() => {
@@ -220,6 +339,11 @@ export function PriceCheckTreeView({ items, qualityFilter, onRemove }: PriceChec
       const matY = matRect.top - containerRect.top;
 
       for (const parent of mat.directParents) {
+        // Only draw lines between adjacent depth levels
+        const parentMat = allMaterials.get(parent.parentId);
+        const parentDepth = parentMat ? parentMat.depth : 0; // root items = depth 0
+        if (mat.depth - parentDepth !== 1) continue;
+
         // Check if parent is a root item or another material
         let parentEl = rootRefs.current.get(parent.parentId);
         if (!parentEl) {
@@ -370,8 +494,16 @@ export function PriceCheckTreeView({ items, qualityFilter, onRemove }: PriceChec
 
   return (
     <div className="relative" ref={containerRef} onClick={handleContainerClick}>
-      {/* Toggle for dependency lines */}
-      <div className="flex items-center justify-end mb-4" onClick={(e) => e.stopPropagation()}>
+      {/* Toolbar */}
+      <div className="flex items-center justify-end gap-4 mb-4" onClick={(e) => e.stopPropagation()}>
+        {showOwned && (
+          <button
+            onClick={onOwnedClear}
+            className="text-sm text-[var(--ffxiv-muted)] hover:text-[var(--ffxiv-error)] transition-colors"
+          >
+            清除擁有數量
+          </button>
+        )}
         <label className="flex items-center gap-2 text-sm cursor-pointer">
           <input
             type="checkbox"
@@ -492,6 +624,20 @@ export function PriceCheckTreeView({ items, qualityFilter, onRemove }: PriceChec
                     </Link>
                     <CopyButton text={item.name} />
                   </div>
+                  {/* Quantity input */}
+                  {showOwned && (
+                    <div className="flex items-center gap-1.5 mb-1" onClick={(e) => e.stopPropagation()}>
+                      <span className="text-xs text-[var(--ffxiv-muted)]">數量:</span>
+                      <input
+                        type="number"
+                        min={1}
+                        value={itemData.listItem.quantity}
+                        onChange={(e) => onQuantityChange(item.id, Math.max(1, parseInt(e.target.value) || 1))}
+                        onFocus={(e) => e.target.select()}
+                        className="w-16 bg-[var(--ffxiv-bg)] border border-[var(--ffxiv-border)] rounded px-1.5 py-0.5 text-xs text-right focus:outline-none focus:border-[var(--ffxiv-highlight)]"
+                      />
+                    </div>
+                  )}
                   {itemData.totalBuyCostHQ > 0 && (
                     <div className="text-xs text-yellow-400">
                       直購HQ: {formatPrice(itemData.totalBuyCostHQ)} gil
@@ -511,7 +657,8 @@ export function PriceCheckTreeView({ items, qualityFilter, onRemove }: PriceChec
         {/* Materials by depth level */}
         {Array.from({ length: maxDepth }, (_, i) => i + 1).map((depth) => {
           const mats = materialsByDepth.get(depth);
-          if (!mats || mats.length === 0) return null;
+          const hasDisplaced = depth === 1 && displacedDirectMaterials.size > 0;
+          if ((!mats || mats.length === 0) && !hasDisplaced) return null;
 
           return (
             <div key={depth}>
@@ -519,109 +666,165 @@ export function PriceCheckTreeView({ items, qualityFilter, onRemove }: PriceChec
                 {depth === 1 ? '直接材料' : `${depth} 層材料`}
               </div>
               <div className="flex flex-wrap gap-3">
+                {/* Ghost cards for displaced direct materials */}
+                {depth === 1 && Array.from(displacedDirectMaterials.values()).map((mat) => {
+                  const iconUrl = getItemIconUrl(mat.item.icon);
+                  return (
+                    <div
+                      key={`ghost-${mat.item.id}`}
+                      className="bg-[var(--ffxiv-card)] border border-dashed border-[var(--ffxiv-border)] rounded-lg p-3 min-w-[160px] max-w-[200px] opacity-50 cursor-pointer hover:opacity-70 transition-opacity"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const el = materialRefs.current.get(mat.item.id);
+                        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        // Brief highlight effect
+                        if (el) {
+                          el.style.boxShadow = '0 0 12px var(--ffxiv-highlight)';
+                          setTimeout(() => { el.style.boxShadow = ''; }, 1500);
+                        }
+                      }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <img
+                          src={iconUrl}
+                          alt={mat.item.name}
+                          className="w-6 h-6 object-contain"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = getItemIconUrl(0);
+                          }}
+                        />
+                        <div className="min-w-0">
+                          <div className={`text-xs font-medium truncate ${getRarityClass(mat.item.rarity)}`}>
+                            {mat.item.name}
+                          </div>
+                          <div className="text-xs text-[var(--ffxiv-muted)]">
+                            ↓ 見 {mat.depth} 層
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
                 {mats.map((mat) => {
                   const iconUrl = getItemIconUrl(mat.item.icon);
                   const bestPrice = getBestPrice(mat, qualityFilter);
                   const totalCost = bestPrice.price !== null ? bestPrice.price * mat.totalQuantity : null;
                   const isHighlighted = selectedRootIds.size > 0 && selectedMaterialIds.has(mat.item.id);
+                  const status = materialStatuses.get(mat.item.id) ?? 'red';
+                  const statusStyle = showOwned ? STATUS_COLORS[status] : null;
+                  const defaultBorder = mat.usedBy.length > 1 ? 'border-[var(--ffxiv-highlight)]' : 'border-[var(--ffxiv-border)]';
 
                   return (
                     <div
                       key={mat.item.id}
                       ref={(el) => setMaterialRef(mat.item.id, el)}
-                      className={`bg-[var(--ffxiv-card)] border rounded-lg p-3 min-w-[180px] max-w-[220px] transition-all duration-200 ${
-                        mat.usedBy.length > 1
-                          ? 'border-[var(--ffxiv-highlight)]'
-                          : 'border-[var(--ffxiv-border)]'
-                      }`}
+                      className={`bg-[var(--ffxiv-card)] border rounded-lg min-w-[180px] max-w-[220px] transition-all duration-200 flex overflow-hidden ${statusStyle ? `${statusStyle.border} ${statusStyle.opacity ?? ''}` : defaultBorder}`}
                       style={{
-                        opacity: selectedRootIds.size > 0 && !isHighlighted ? 0.4 : 1,
+                        opacity: selectedRootIds.size > 0 && !isHighlighted ? 0.4 : undefined,
                         transform: isHighlighted ? 'scale(1.02)' : 'scale(1)',
                       }}
                       onClick={(e) => e.stopPropagation()}
                     >
-                      {/* Item header */}
-                      <div className="flex items-center gap-2 mb-2">
-                        <ListingsTooltip listings={mat.listings}>
-                          <Link
-                            to={`/item/${mat.item.id}`}
-                            className="w-8 h-8 bg-[var(--ffxiv-bg)] rounded overflow-hidden flex-shrink-0"
-                          >
-                            <img
-                              src={iconUrl}
-                              alt={mat.item.name}
-                              className="w-full h-full object-contain"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = getItemIconUrl(0);
-                              }}
-                            />
-                          </Link>
-                        </ListingsTooltip>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-0.5">
+                      {/* Left color bar */}
+                      {statusStyle && <div className={`w-1 flex-shrink-0 ${statusStyle.bar}`} />}
+
+                      <div className="p-3 flex-1 min-w-0">
+                        {/* Item header */}
+                        <div className="flex items-center gap-2 mb-2">
+                          <ListingsTooltip listings={mat.listings}>
                             <Link
                               to={`/item/${mat.item.id}`}
-                              className={`text-sm font-medium hover:text-[var(--ffxiv-highlight)] truncate ${getRarityClass(mat.item.rarity)}`}
+                              className="w-8 h-8 bg-[var(--ffxiv-bg)] rounded overflow-hidden flex-shrink-0"
                             >
-                              {mat.item.name}
+                              <img
+                                src={iconUrl}
+                                alt={mat.item.name}
+                                className="w-full h-full object-contain"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = getItemIconUrl(0);
+                                }}
+                              />
                             </Link>
-                            <CopyButton text={mat.item.name} />
-                          </div>
-                          <div className="text-xs text-[var(--ffxiv-muted)]">
-                            需要: {mat.totalQuantity}
+                          </ListingsTooltip>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-0.5">
+                              <Link
+                                to={`/item/${mat.item.id}`}
+                                className={`text-sm font-medium hover:text-[var(--ffxiv-highlight)] truncate ${getRarityClass(mat.item.rarity)}`}
+                              >
+                                {mat.item.name}
+                              </Link>
+                              <CopyButton text={mat.item.name} />
+                            </div>
+                            <div className="text-xs text-[var(--ffxiv-muted)]">
+                              需要: {mat.totalQuantity}
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      {/* Price info */}
-                      <div className="text-xs space-y-0.5 mb-2">
-                        {bestPrice.price !== null && (
-                          <div className={bestPrice.isHQ ? 'text-yellow-400' : 'text-green-400'}>
-                            {bestPrice.isHQ ? 'HQ' : 'NQ'}: {formatPrice(bestPrice.price)} gil
-                            {bestPrice.server && (
-                              <span className="text-[var(--ffxiv-muted)]"> @ {bestPrice.server}</span>
-                            )}
-                          </div>
-                        )}
-                        {totalCost !== null && (
-                          <div className="text-[var(--ffxiv-muted)]">
-                            小計: {formatPrice(totalCost)} gil
-                          </div>
-                        )}
-                        {mat.hasRecipe && mat.craftCost !== null && (
-                          <div className="text-blue-400">
-                            可製作
-                          </div>
-                        )}
-                      </div>
+                        {/* Owned input */}
+                        {showOwned && <div className="flex items-center gap-1.5 mb-2">
+                          <span className="text-xs text-[var(--ffxiv-muted)]">擁有:</span>
+                          <input
+                            type="number"
+                            min={0}
+                            value={ownedMaterials[mat.item.id] ?? 0}
+                            onChange={(e) => onOwnedChange(mat.item.id, Math.max(0, parseInt(e.target.value) || 0))}
+                            onFocus={(e) => e.target.select()}
+                            className="w-16 bg-[var(--ffxiv-bg)] border border-[var(--ffxiv-border)] rounded px-1.5 py-0.5 text-xs text-right focus:outline-none focus:border-[var(--ffxiv-highlight)]"
+                          />
+                        </div>}
 
-                      {/* Used by which items - with color dots */}
-                      <div className="flex flex-wrap gap-1">
-                        {mat.usedBy.map((usage) => {
-                          const usageColor = rootColorMap.get(usage.itemId);
-                          return (
-                            <span
-                              key={usage.itemId}
-                              className="px-1.5 py-0.5 rounded text-xs flex items-center gap-1"
-                              style={{
-                                backgroundColor: `${usageColor}20`,
-                                color: usageColor,
-                              }}
-                              title={`${usage.itemName} 需要 ${usage.quantity} 個`}
-                            >
+                        {/* Price info */}
+                        <div className="text-xs space-y-0.5 mb-2">
+                          {bestPrice.price !== null && (
+                            <div className={bestPrice.isHQ ? 'text-yellow-400' : 'text-green-400'}>
+                              {bestPrice.isHQ ? 'HQ' : 'NQ'}: {formatPrice(bestPrice.price)} gil
+                              {bestPrice.server && (
+                                <span className="text-[var(--ffxiv-muted)]"> @ {bestPrice.server}</span>
+                              )}
+                            </div>
+                          )}
+                          {totalCost !== null && (
+                            <div className="text-[var(--ffxiv-muted)]">
+                              小計: {formatPrice(totalCost)} gil
+                            </div>
+                          )}
+                          {mat.hasRecipe && mat.craftCost !== null && (
+                            <div className="text-blue-400">
+                              可製作
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Used by which items - with color dots */}
+                        <div className="flex flex-wrap gap-1">
+                          {mat.usedBy.map((usage) => {
+                            const usageColor = rootColorMap.get(usage.itemId);
+                            return (
                               <span
-                                className="w-2 h-2 rounded-full"
-                                style={{ backgroundColor: usageColor }}
-                              />
-                              {usage.quantity}
+                                key={usage.itemId}
+                                className="px-1.5 py-0.5 rounded text-xs flex items-center gap-1"
+                                style={{
+                                  backgroundColor: `${usageColor}20`,
+                                  color: usageColor,
+                                }}
+                                title={`${usage.itemName} 需要 ${usage.quantity} 個`}
+                              >
+                                <span
+                                  className="w-2 h-2 rounded-full"
+                                  style={{ backgroundColor: usageColor }}
+                                />
+                                {usage.quantity}
+                              </span>
+                            );
+                          })}
+                          {mat.usedBy.length > 1 && (
+                            <span className="px-1.5 py-0.5 bg-[var(--ffxiv-highlight)]/20 text-[var(--ffxiv-highlight)] rounded text-xs">
+                              共用
                             </span>
-                          );
-                        })}
-                        {mat.usedBy.length > 1 && (
-                          <span className="px-1.5 py-0.5 bg-[var(--ffxiv-highlight)]/20 text-[var(--ffxiv-highlight)] rounded text-xs">
-                            共用
-                          </span>
-                        )}
+                          )}
+                        </div>
                       </div>
                     </div>
                   );
