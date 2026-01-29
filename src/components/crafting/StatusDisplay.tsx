@@ -45,17 +45,17 @@ function BuffDisplay({ buffs }: { buffs: CraftingBuffs }) {
   const activeBuffs: { name: string; value: number | string }[] = [];
 
   if (buffs.muscle_memory > 0) activeBuffs.push({ name: '堅信', value: buffs.muscle_memory });
-  if (buffs.great_strides > 0) activeBuffs.push({ name: '闘步', value: buffs.great_strides });
+  if (buffs.great_strides > 0) activeBuffs.push({ name: '闊步', value: buffs.great_strides });
   if (buffs.veneration > 0) activeBuffs.push({ name: '崇敬', value: buffs.veneration });
-  if (buffs.innovation > 0) activeBuffs.push({ name: '改革', value: buffs.innovation });
+  if (buffs.innovation > 0) activeBuffs.push({ name: '革新', value: buffs.innovation });
   if (buffs.inner_quiet > 0) activeBuffs.push({ name: '內靜', value: buffs.inner_quiet });
   if (buffs.final_appraisal > 0) activeBuffs.push({ name: '最終確認', value: buffs.final_appraisal });
   if (buffs.manipulation > 0) activeBuffs.push({ name: '掌握', value: buffs.manipulation });
   if (buffs.wast_not > 0) activeBuffs.push({ name: '儉約', value: buffs.wast_not });
   if (buffs.observed > 0) activeBuffs.push({ name: '觀察', value: buffs.observed });
-  if (buffs.expedience > 0) activeBuffs.push({ name: '長期儉約', value: buffs.expedience });
+  if (buffs.expedience > 0) activeBuffs.push({ name: '儉約II', value: buffs.expedience });
   if (buffs.heart_and_soul === 'Active' as LimitedActionState) activeBuffs.push({ name: '專心致志', value: '!' });
-  if (buffs.trained_perfection === 'Active' as LimitedActionState) activeBuffs.push({ name: '工匠的奇技', value: '!' });
+  if (buffs.trained_perfection === 'Active' as LimitedActionState) activeBuffs.push({ name: '巧奪天工', value: '!' });
 
   if (activeBuffs.length === 0) {
     return <div className="text-xs text-[var(--ffxiv-muted)]">無增益效果</div>;
