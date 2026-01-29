@@ -1,5 +1,5 @@
 // Main crafting simulator component
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { Item, Recipe } from '../../types';
 import type {
