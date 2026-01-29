@@ -705,7 +705,7 @@ export function PriceCheckTreeView({ items, qualityFilter, onRemove, ownedMateri
                     </div>
                   );
                 })}
-                {mats.map((mat) => {
+                {mats?.map((mat) => {
                   const iconUrl = getItemIconUrl(mat.item.icon);
                   const bestPrice = getBestPrice(mat, qualityFilter);
                   const totalCost = bestPrice.price !== null ? bestPrice.price * mat.totalQuantity : null;
