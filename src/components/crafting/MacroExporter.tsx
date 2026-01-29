@@ -20,7 +20,7 @@ const ACTION_MACRO_NAMES: Record<CraftingAction, string> = {
   [CraftingAction.Veneration]: '崇敬',
   [CraftingAction.StandardTouch]: '中級加工',
   [CraftingAction.GreatStrides]: '闊步',
-  [CraftingAction.Innovation]: '革新',
+  [CraftingAction.Innovation]: '改革',
   [CraftingAction.FinalAppraisal]: '最終確認',
   [CraftingAction.WasteNotII]: '儉約II',
   [CraftingAction.ByregotsBlessing]: '比爾格的祝福',
@@ -43,7 +43,7 @@ const ACTION_MACRO_NAMES: Record<CraftingAction, string> = {
   [CraftingAction.RefinedTouch]: '精煉加工',
   [CraftingAction.DaringTouch]: '倉促', // DaringTouch maps to HastyTouch in macro
   [CraftingAction.ImmaculateMend]: '工匠的苦行',
-  [CraftingAction.QuickInnovation]: '快速革新',
+  [CraftingAction.QuickInnovation]: '快速改革',
   [CraftingAction.TrainedPerfection]: '巧奪天工',
   [CraftingAction.RapidSynthesisFail]: '高速製作',
   [CraftingAction.HastyTouchFail]: '倉促',

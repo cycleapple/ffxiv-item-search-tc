@@ -153,7 +153,7 @@ export function SolverPanel({ status, onSolverResult, disabled = false }: Solver
               onChange={(e) => setUseQuickInnovation(e.target.checked)}
               className="accent-[var(--ffxiv-accent)]"
             />
-            <span className="text-xs text-[var(--ffxiv-text)]">使用快速革新</span>
+            <span className="text-xs text-[var(--ffxiv-text)]">使用快速改革</span>
           </label>
 
           <label className="flex items-center gap-2 cursor-pointer">

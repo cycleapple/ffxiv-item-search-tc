@@ -47,7 +47,7 @@ function BuffDisplay({ buffs }: { buffs: CraftingBuffs }) {
   if (buffs.muscle_memory > 0) activeBuffs.push({ name: '堅信', value: buffs.muscle_memory });
   if (buffs.great_strides > 0) activeBuffs.push({ name: '闊步', value: buffs.great_strides });
   if (buffs.veneration > 0) activeBuffs.push({ name: '崇敬', value: buffs.veneration });
-  if (buffs.innovation > 0) activeBuffs.push({ name: '革新', value: buffs.innovation });
+  if (buffs.innovation > 0) activeBuffs.push({ name: '改革', value: buffs.innovation });
   if (buffs.inner_quiet > 0) activeBuffs.push({ name: '內靜', value: buffs.inner_quiet });
   if (buffs.final_appraisal > 0) activeBuffs.push({ name: '最終確認', value: buffs.final_appraisal });
   if (buffs.manipulation > 0) activeBuffs.push({ name: '掌握', value: buffs.manipulation });
