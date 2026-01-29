@@ -6,6 +6,7 @@ import type { QualityFilter } from '../hooks/useCraftingTree';
 import { getItemIconUrl } from '../services/xivapiService';
 import { formatPrice } from '../services/universalisApi';
 import { ListingsTooltip } from './ListingsTooltip';
+import { CopyButton } from './CopyButton';
 
 interface CraftingMaterialTreeViewProps {
   tree: CraftingTreeNode;
@@ -193,12 +194,15 @@ export function CraftingMaterialTreeView({ tree, qualityFilter, showCrystals }: 
                         </Link>
                       </ListingsTooltip>
                       <div className="min-w-0 flex-1">
-                        <Link
-                          to={`/item/${mat.item.id}`}
-                          className={`text-sm font-medium hover:text-[var(--ffxiv-highlight)] truncate block ${getRarityClass(mat.item.rarity)}`}
-                        >
-                          {mat.item.name}
-                        </Link>
+                        <div className="flex items-center gap-0.5">
+                          <Link
+                            to={`/item/${mat.item.id}`}
+                            className={`text-sm font-medium hover:text-[var(--ffxiv-highlight)] truncate ${getRarityClass(mat.item.rarity)}`}
+                          >
+                            {mat.item.name}
+                          </Link>
+                          <CopyButton text={mat.item.name} />
+                        </div>
                         <div className="text-xs text-[var(--ffxiv-muted)]">
                           需要: {mat.totalQuantity}
                         </div>

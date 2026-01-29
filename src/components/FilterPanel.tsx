@@ -141,6 +141,7 @@ function getJobIconUrl(abbr: string): string {
 }
 
 export function FilterPanel({ filters, categories, onFilterChange, onReset }: FilterPanelProps) {
+  const [collapsed, setCollapsed] = useState(true);
   const [patches, setPatches] = useState<string[]>([]);
 
   // Load available patches
@@ -196,7 +197,13 @@ export function FilterPanel({ filters, categories, onFilterChange, onReset }: Fi
     <div className="bg-[var(--ffxiv-card)] rounded-lg border border-[var(--ffxiv-border)] overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-[var(--ffxiv-bg-tertiary)] border-b border-[var(--ffxiv-border)]">
-        <h3 className="text-sm font-medium text-[var(--ffxiv-text)]">篩選條件</h3>
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="flex items-center gap-1 text-sm font-medium text-[var(--ffxiv-text)] hover:text-[var(--ffxiv-accent)] transition-colors"
+        >
+          <span className={`text-xs transition-transform ${collapsed ? '' : 'rotate-90'}`}>▶</span>
+          篩選條件
+        </button>
         {hasActiveFilters && (
           <button
             onClick={onReset}
@@ -207,7 +214,7 @@ export function FilterPanel({ filters, categories, onFilterChange, onReset }: Fi
         )}
       </div>
 
-      <div className="p-4 space-y-4">
+      {!collapsed && <div className="p-4 space-y-4">
         {/* Row 1: Category, Rarity, Patch */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {/* Category Filter */}
@@ -485,7 +492,7 @@ export function FilterPanel({ filters, categories, onFilterChange, onReset }: Fi
             })}
           </div>
         </div>
-      </div>
+      </div>}
     </div>
   );
 }
