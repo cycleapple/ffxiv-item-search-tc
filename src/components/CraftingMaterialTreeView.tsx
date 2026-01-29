@@ -130,9 +130,14 @@ export function CraftingMaterialTreeView({ tree, qualityFilter, showCrystals }: 
       max = Math.max(max, depth);
     }
 
-    // Sort each depth group by total quantity (descending)
+    // Sort each depth group: non-crystals first (by quantity desc), then crystals last
     for (const mats of byDepth.values()) {
-      mats.sort((a, b) => b.totalQuantity - a.totalQuantity);
+      mats.sort((a, b) => {
+        const aCrystal = CRYSTAL_IDS.has(a.item.id) ? 1 : 0;
+        const bCrystal = CRYSTAL_IDS.has(b.item.id) ? 1 : 0;
+        if (aCrystal !== bCrystal) return aCrystal - bCrystal;
+        return b.totalQuantity - a.totalQuantity;
+      });
     }
 
     return { materialsByDepth: byDepth, maxDepth: max };
