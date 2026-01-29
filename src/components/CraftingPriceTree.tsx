@@ -17,9 +17,10 @@ export function CraftingPriceTree({ itemId, isUntradable }: CraftingPriceTreePro
   const [qualityFilter, setQualityFilter] = useState<QualityFilter>('both');
   const [viewMode, setViewMode] = useState<ViewMode>('flat');
 
+  // Always build tree with crystals included; each view filters independently
   const { tree, loading, error, totalCraftCost, totalBuyCostHQ, refresh } = useCraftingTree(
     itemId,
-    showCrystals,
+    true,
     qualityFilter
   );
 
@@ -187,6 +188,7 @@ export function CraftingPriceTree({ itemId, isUntradable }: CraftingPriceTreePro
                 <CraftingMaterialTreeView
                   tree={tree}
                   qualityFilter={qualityFilter}
+                  showCrystals={showCrystals}
                 />
               )}
             </div>

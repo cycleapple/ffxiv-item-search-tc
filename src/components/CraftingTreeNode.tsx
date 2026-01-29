@@ -1,5 +1,5 @@
 // Recursive crafting tree node component
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import type { CraftingTreeNode as TreeNodeType } from '../types';
 import type { QualityFilter } from '../hooks/useCraftingTree';
@@ -7,6 +7,9 @@ import { getItemIconUrl } from '../services/xivapiService';
 import { formatPrice } from '../services/universalisApi';
 import { CopyButton } from './CopyButton';
 import { ListingsTooltip } from './ListingsTooltip';
+
+// Crystal item IDs (2-19)
+const CRYSTAL_IDS = new Set([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
 
 interface CraftingTreeNodeProps {
   node: TreeNodeType;
@@ -46,7 +49,13 @@ function getBestPrice(
 export function CraftingTreeNodeComponent({ node, showCrystals, qualityFilter }: CraftingTreeNodeProps) {
   const [isCollapsed, setIsCollapsed] = useState(node.depth > 2);
 
-  const hasChildren = node.children.length > 0;
+  // Filter children based on showCrystals
+  const filteredChildren = useMemo(() => {
+    if (showCrystals) return node.children;
+    return node.children.filter(child => !CRYSTAL_IDS.has(child.item.id));
+  }, [node.children, showCrystals]);
+
+  const hasChildren = filteredChildren.length > 0;
   const iconUrl = getItemIconUrl(node.item.icon);
 
   // Get best price based on filter
@@ -199,7 +208,7 @@ export function CraftingTreeNodeComponent({ node, showCrystals, qualityFilter }:
       {/* Children */}
       {hasChildren && !isCollapsed && (
         <div className="mt-2 border-l-2 border-[var(--ffxiv-accent)] ml-6 pl-4 space-y-2">
-          {node.children.map((child, index) => (
+          {filteredChildren.map((child, index) => (
             <CraftingTreeNodeComponent
               key={`${child.item.id}-${index}`}
               node={child}
@@ -213,7 +222,7 @@ export function CraftingTreeNodeComponent({ node, showCrystals, qualityFilter }:
       {/* Collapsed indicator */}
       {hasChildren && isCollapsed && (
         <div className="ml-14 mt-1 text-xs text-[var(--ffxiv-muted)]">
-          ({node.children.length} 個材料已收合)
+          ({filteredChildren.length} 個材料已收合)
         </div>
       )}
     </div>

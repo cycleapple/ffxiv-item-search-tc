@@ -10,6 +10,7 @@ import { ListingsTooltip } from './ListingsTooltip';
 interface CraftingMaterialTreeViewProps {
   tree: CraftingTreeNode;
   qualityFilter: QualityFilter;
+  showCrystals: boolean;
 }
 
 interface AggregatedMaterial {
@@ -24,6 +25,9 @@ interface AggregatedMaterial {
   hasRecipe: boolean;
   listings?: ListingInfo[];
 }
+
+// Crystal item IDs (2-19)
+const CRYSTAL_IDS = new Set([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
 
 /**
  * Collect all materials from a tree node recursively
@@ -98,11 +102,20 @@ function getRarityClass(rarity: number): string {
   }
 }
 
-export function CraftingMaterialTreeView({ tree, qualityFilter }: CraftingMaterialTreeViewProps) {
+export function CraftingMaterialTreeView({ tree, qualityFilter, showCrystals }: CraftingMaterialTreeViewProps) {
   // Aggregate all materials
   const { materialsByDepth, maxDepth } = useMemo(() => {
     const materials = new Map<number, AggregatedMaterial>();
     collectMaterials(tree, materials, 1);
+
+    // Filter out crystals if not showing
+    if (!showCrystals) {
+      for (const [id] of materials) {
+        if (CRYSTAL_IDS.has(id)) {
+          materials.delete(id);
+        }
+      }
+    }
 
     // Group materials by depth
     const byDepth = new Map<number, AggregatedMaterial[]>();
@@ -123,7 +136,7 @@ export function CraftingMaterialTreeView({ tree, qualityFilter }: CraftingMateri
     }
 
     return { materialsByDepth: byDepth, maxDepth: max };
-  }, [tree]);
+  }, [tree, showCrystals]);
 
   if (maxDepth === 0) {
     return (
@@ -145,7 +158,7 @@ export function CraftingMaterialTreeView({ tree, qualityFilter }: CraftingMateri
             <div className="text-sm text-[var(--ffxiv-muted)] mb-3">
               {depth === 1 ? '直接材料' : `${depth} 層材料`}
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            <div className="flex flex-wrap gap-3">
               {mats.map((mat) => {
                 const iconUrl = getItemIconUrl(mat.item.icon);
                 const bestPrice = getBestPrice(mat, qualityFilter);
@@ -154,7 +167,7 @@ export function CraftingMaterialTreeView({ tree, qualityFilter }: CraftingMateri
                 return (
                   <div
                     key={mat.item.id}
-                    className="bg-[var(--ffxiv-card)] border border-[var(--ffxiv-border)] rounded-lg p-3"
+                    className="bg-[var(--ffxiv-card)] border border-[var(--ffxiv-border)] rounded-lg p-3 min-w-[180px] max-w-[220px]"
                   >
                     {/* Item header */}
                     <div className="flex items-center gap-2 mb-2">
@@ -180,19 +193,17 @@ export function CraftingMaterialTreeView({ tree, qualityFilter }: CraftingMateri
                         >
                           {mat.item.name}
                         </Link>
+                        <div className="text-xs text-[var(--ffxiv-muted)]">
+                          需要: {mat.totalQuantity}
+                        </div>
                       </div>
-                    </div>
-
-                    {/* Quantity */}
-                    <div className="text-xs text-[var(--ffxiv-muted)] mb-1">
-                      需要: <span className="text-[var(--ffxiv-text)]">{mat.totalQuantity}</span>
                     </div>
 
                     {/* Price info */}
                     <div className="text-xs space-y-0.5">
                       {bestPrice.price !== null && (
                         <div className={bestPrice.isHQ ? 'text-yellow-400' : 'text-green-400'}>
-                          {bestPrice.isHQ ? 'HQ' : 'NQ'}: {formatPrice(bestPrice.price)}
+                          {bestPrice.isHQ ? 'HQ' : 'NQ'}: {formatPrice(bestPrice.price)} gil
                           {bestPrice.server && (
                             <span className="text-[var(--ffxiv-muted)]"> @ {bestPrice.server}</span>
                           )}
