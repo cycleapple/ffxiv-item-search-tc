@@ -61,25 +61,8 @@ export function CraftingTreeNodeComponent({ node, showCrystals, qualityFilter }:
         flex items-start gap-3 p-3 rounded-lg
         bg-[var(--ffxiv-card)] border border-[var(--ffxiv-accent)]
         hover:border-[var(--ffxiv-highlight)] transition-colors
-        ${node.depth > 0 ? 'ml-6' : ''}
+        ${node.depth > 0 ? 'ml-10' : ''}
       `}>
-        {/* Collapse toggle for nodes with children */}
-        {hasChildren && (
-          <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="flex-shrink-0 w-5 h-5 flex items-center justify-center text-[var(--ffxiv-muted)] hover:text-[var(--ffxiv-highlight)]"
-          >
-            <svg
-              className={`w-4 h-4 transition-transform ${isCollapsed ? '' : 'rotate-90'}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        )}
-
         {/* Item icon with tooltip */}
         <ListingsTooltip listings={node.listings}>
           <Link
@@ -194,11 +177,28 @@ export function CraftingTreeNodeComponent({ node, showCrystals, qualityFilter }:
             </div>
           )}
         </div>
+
+        {/* Collapse toggle for nodes with children - right side */}
+        {hasChildren && (
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="flex-shrink-0 w-5 h-5 flex items-center justify-center text-[var(--ffxiv-muted)] hover:text-[var(--ffxiv-highlight)] self-center"
+          >
+            <svg
+              className={`w-4 h-4 transition-transform ${isCollapsed ? '' : 'rotate-90'}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        )}
       </div>
 
       {/* Children */}
       {hasChildren && !isCollapsed && (
-        <div className="mt-2 border-l-2 border-[var(--ffxiv-accent)] ml-4 pl-2 space-y-2">
+        <div className="mt-2 border-l-2 border-[var(--ffxiv-accent)] ml-6 pl-4 space-y-2">
           {node.children.map((child, index) => (
             <CraftingTreeNodeComponent
               key={`${child.item.id}-${index}`}
@@ -212,7 +212,7 @@ export function CraftingTreeNodeComponent({ node, showCrystals, qualityFilter }:
 
       {/* Collapsed indicator */}
       {hasChildren && isCollapsed && (
-        <div className="ml-10 mt-1 text-xs text-[var(--ffxiv-muted)]">
+        <div className="ml-14 mt-1 text-xs text-[var(--ffxiv-muted)]">
           ({node.children.length} 個材料已收合)
         </div>
       )}
