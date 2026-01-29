@@ -11,6 +11,8 @@ export function SearchBar({ value, onChange, placeholder = '搜尋物品...' }: 
   const [localValue, setLocalValue] = useState(value);
   const isComposingRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Track whether the user is actively editing to avoid external value overwriting keystrokes
+  const isFocusedRef = useRef(false);
 
   // Function to trigger debounced search
   const triggerSearch = useCallback((searchValue: string) => {
@@ -33,9 +35,9 @@ export function SearchBar({ value, onChange, placeholder = '搜尋物品...' }: 
     };
   }, [localValue, triggerSearch]);
 
-  // Sync with external value changes - but not during composition
+  // Sync with external value changes - but not while user is typing or composing
   useEffect(() => {
-    if (!isComposingRef.current && value !== localValue) {
+    if (!isComposingRef.current && !isFocusedRef.current && value !== localValue) {
       setLocalValue(value);
     }
   }, [value]);
@@ -66,6 +68,8 @@ export function SearchBar({ value, onChange, placeholder = '搜尋物品...' }: 
         type="text"
         value={localValue}
         onChange={(e) => setLocalValue(e.target.value)}
+        onFocus={() => { isFocusedRef.current = true; }}
+        onBlur={() => { isFocusedRef.current = false; }}
         onCompositionStart={() => { isComposingRef.current = true; }}
         onCompositionEnd={(e) => {
           isComposingRef.current = false;
