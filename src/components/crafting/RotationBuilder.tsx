@@ -1,4 +1,5 @@
 // Rotation builder - displays and manages the action sequence
+import { useState } from 'react';
 import { CraftingAction, type RotationSlot } from '../../types/crafting';
 import { getActionIconUrl } from '../../utils/actionIcons';
 
@@ -7,6 +8,7 @@ interface RotationBuilderProps {
   onRemoveAction: (id: number) => void;
   onClear: () => void;
   onMoveAction?: (fromIndex: number, toIndex: number) => void;
+  defaultCollapsed?: boolean;
 }
 
 // Action names in Traditional Chinese (abbreviated)
@@ -110,14 +112,21 @@ export function RotationBuilder({
   rotation,
   onRemoveAction,
   onClear,
+  defaultCollapsed,
 }: RotationBuilderProps) {
+  const [collapsed, setCollapsed] = useState(defaultCollapsed ?? false);
+
   return (
     <div className="bg-[var(--ffxiv-card)] rounded-lg p-4 border border-[var(--ffxiv-border)]">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-medium text-[var(--ffxiv-text)]">
+      <div className="flex items-center justify-between mb-1">
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="flex items-center gap-1 text-sm font-medium text-[var(--ffxiv-text)] hover:text-[var(--ffxiv-accent)] transition-colors"
+        >
+          <span className={`text-xs transition-transform ${collapsed ? '' : 'rotate-90'}`}>▶</span>
           動作序列 ({rotation.length} 步)
-        </h3>
-        {rotation.length > 0 && (
+        </button>
+        {!collapsed && rotation.length > 0 && (
           <button
             onClick={onClear}
             className="text-xs text-red-400 hover:text-red-300 transition-colors"
@@ -127,36 +136,38 @@ export function RotationBuilder({
         )}
       </div>
 
-      {rotation.length === 0 ? (
-        <div className="text-center py-4 text-sm text-[var(--ffxiv-muted)]">
-          點擊技能以添加到序列
-        </div>
-      ) : (
-        <div className="flex flex-wrap gap-1">
-          {rotation.map((slot, index) => (
-            <div
-              key={slot.id}
-              className={`
-                group relative w-10 h-10 rounded border transition-all cursor-pointer
-                ${getActionColor(slot.action)}
-              `}
-              onClick={() => onRemoveAction(slot.id)}
-              title={`${index + 1}. ${ACTION_NAMES_SHORT[slot.action] || slot.action} (點擊移除)`}
-            >
-              <img
-                src={getActionIconUrl(slot.action)}
-                alt={ACTION_NAMES_SHORT[slot.action] || slot.action}
-                className="w-full h-full object-contain p-0.5"
-              />
-              <span className="absolute -top-1.5 -left-1.5 text-[9px] bg-[var(--ffxiv-bg)] border border-[var(--ffxiv-border)] px-1 rounded">
-                {index + 1}
-              </span>
-              <span className="absolute -top-1 -right-1 text-[10px] bg-red-600 rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                ×
-              </span>
-            </div>
-          ))}
-        </div>
+      {!collapsed && (
+        rotation.length === 0 ? (
+          <div className="text-center py-4 text-sm text-[var(--ffxiv-muted)]">
+            點擊技能以添加到序列
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-1 mt-3">
+            {rotation.map((slot, index) => (
+              <div
+                key={slot.id}
+                className={`
+                  group relative w-10 h-10 rounded border transition-all cursor-pointer
+                  ${getActionColor(slot.action)}
+                `}
+                onClick={() => onRemoveAction(slot.id)}
+                title={`${index + 1}. ${ACTION_NAMES_SHORT[slot.action] || slot.action} (點擊移除)`}
+              >
+                <img
+                  src={getActionIconUrl(slot.action)}
+                  alt={ACTION_NAMES_SHORT[slot.action] || slot.action}
+                  className="w-full h-full object-contain p-0.5"
+                />
+                <span className="absolute -top-1.5 -left-1.5 text-[9px] bg-[var(--ffxiv-bg)] border border-[var(--ffxiv-border)] px-1 rounded">
+                  {index + 1}
+                </span>
+                <span className="absolute -top-1 -right-1 text-[10px] bg-red-600 rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  ×
+                </span>
+              </div>
+            ))}
+          </div>
+        )
       )}
     </div>
   );

@@ -8,6 +8,7 @@ interface ActionPaletteProps {
   status: CraftingStatus | null;
   onActionClick: (action: CraftingAction) => void;
   disabled?: boolean;
+  defaultCollapsed?: boolean;
 }
 
 // Action names in Traditional Chinese
@@ -109,7 +110,8 @@ function ActionButton({
   );
 }
 
-export function ActionPalette({ status, onActionClick, disabled = false }: ActionPaletteProps) {
+export function ActionPalette({ status, onActionClick, disabled = false, defaultCollapsed }: ActionPaletteProps) {
+  const [collapsed, setCollapsed] = useState(defaultCollapsed ?? false);
   const [allowedMap, setAllowedMap] = useState<Map<CraftingAction, boolean>>(new Map());
   const [cpMap, setCpMap] = useState<Map<CraftingAction, number>>(new Map());
 
@@ -146,29 +148,37 @@ export function ActionPalette({ status, onActionClick, disabled = false }: Actio
 
   return (
     <div className="bg-[var(--ffxiv-card)] rounded-lg p-4 border border-[var(--ffxiv-border)]">
-      <h3 className="text-sm font-medium text-[var(--ffxiv-text)] mb-3">可用技能</h3>
+      <button
+        onClick={() => setCollapsed(!collapsed)}
+        className="flex items-center gap-1 text-sm font-medium text-[var(--ffxiv-text)] hover:text-[var(--ffxiv-accent)] transition-colors mb-1"
+      >
+        <span className={`text-xs transition-transform ${collapsed ? '' : 'rotate-90'}`}>▶</span>
+        可用技能
+      </button>
 
-      <div className="space-y-3">
-        {Object.entries(ACTION_CATEGORIES).map(([category, actions]) => (
-          <div key={category}>
-            <div className="text-xs text-[var(--ffxiv-muted)] mb-1 border-b border-[var(--ffxiv-border)] pb-1">
-              {CATEGORY_NAMES[category] || category}
+      {!collapsed && (
+        <div className="space-y-3 mt-3">
+          {Object.entries(ACTION_CATEGORIES).map(([category, actions]) => (
+            <div key={category}>
+              <div className="text-xs text-[var(--ffxiv-muted)] mb-1 border-b border-[var(--ffxiv-border)] pb-1">
+                {CATEGORY_NAMES[category] || category}
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {actions.map((action) => (
+                  <ActionButton
+                    key={action}
+                    action={action}
+                    allowed={allowedMap.get(action) ?? false}
+                    cp={cpMap.get(action)}
+                    onClick={() => onActionClick(action)}
+                    disabled={disabled || !status}
+                  />
+                ))}
+              </div>
             </div>
-            <div className="flex flex-wrap gap-1">
-              {actions.map((action) => (
-                <ActionButton
-                  key={action}
-                  action={action}
-                  allowed={allowedMap.get(action) ?? false}
-                  cp={cpMap.get(action)}
-                  onClick={() => onActionClick(action)}
-                  disabled={disabled || !status}
-                />
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

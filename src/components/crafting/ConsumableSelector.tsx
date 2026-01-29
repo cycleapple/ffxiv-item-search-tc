@@ -8,6 +8,7 @@ import type { CraftingConsumables } from '../../hooks/useSettings';
 interface ConsumableSelectorProps {
   consumables: CraftingConsumables;
   onChange: (consumables: Partial<CraftingConsumables>) => void;
+  defaultCollapsed?: boolean;
 }
 
 // Filter items that have crafting-related stats (Craftsmanship=70, Control=71, CP=11)
@@ -32,8 +33,9 @@ function calculateBonus(bonus: FoodBonus, baseValue: number, isHq: boolean): num
   }
 }
 
-export function ConsumableSelector({ consumables, onChange }: ConsumableSelectorProps) {
+export function ConsumableSelector({ consumables, onChange, defaultCollapsed }: ConsumableSelectorProps) {
   const { items, loading } = useItemData();
+  const [collapsed, setCollapsed] = useState(defaultCollapsed ?? false);
   const [foodSearch, setFoodSearch] = useState('');
   const [medicineSearch, setMedicineSearch] = useState('');
   const [showFoodDropdown, setShowFoodDropdown] = useState(false);
@@ -107,11 +109,28 @@ export function ConsumableSelector({ consumables, onChange }: ConsumableSelector
     );
   };
 
+  const summaryParts: string[] = [];
+  if (selectedFood) summaryParts.push(selectedFood.name);
+  if (selectedMedicine) summaryParts.push(selectedMedicine.name);
+  if (consumables.specialist) summaryParts.push('專家');
+
   return (
     <div className="bg-[var(--ffxiv-card)] rounded-lg p-4 border border-[var(--ffxiv-border)]">
-      <h3 className="text-sm font-medium text-[var(--ffxiv-text)] mb-3">消耗品與專家</h3>
+      <button
+        onClick={() => setCollapsed(!collapsed)}
+        className="flex items-center gap-1 text-sm font-medium text-[var(--ffxiv-text)] hover:text-[var(--ffxiv-accent)] transition-colors mb-1"
+      >
+        <span className={`text-xs transition-transform ${collapsed ? '' : 'rotate-90'}`}>▶</span>
+        消耗品與專家
+        {collapsed && summaryParts.length > 0 && (
+          <span className="text-xs text-[var(--ffxiv-muted)] ml-1">{summaryParts.join(' / ')}</span>
+        )}
+        {collapsed && summaryParts.length === 0 && (
+          <span className="text-xs text-[var(--ffxiv-muted)] ml-1">未設定</span>
+        )}
+      </button>
 
-      <div className="space-y-3">
+      {!collapsed && <div className="space-y-3 mt-3">
         {/* Food Selector */}
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -271,7 +290,7 @@ export function ConsumableSelector({ consumables, onChange }: ConsumableSelector
           </label>
           <span className="text-xs text-[var(--ffxiv-muted)]">(作業 +20, 加工 +20)</span>
         </div>
-      </div>
+      </div>}
     </div>
   );
 }

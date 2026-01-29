@@ -1,8 +1,10 @@
 // Crafting status display component
+import { useState } from 'react';
 import type { CraftingStatus, CraftingBuffs, LimitedActionState } from '../../types/crafting';
 
 interface StatusDisplayProps {
   status: CraftingStatus | null;
+  defaultCollapsed?: boolean;
 }
 
 // Progress bar component
@@ -100,7 +102,9 @@ const CONDITION_NAMES: Record<string, string> = {
   GoodOmen: '良兆',
 };
 
-export function StatusDisplay({ status }: StatusDisplayProps) {
+export function StatusDisplay({ status, defaultCollapsed }: StatusDisplayProps) {
+  const [collapsed, setCollapsed] = useState(defaultCollapsed ?? false);
+
   if (!status) {
     return (
       <div className="bg-[var(--ffxiv-card)] rounded-lg p-4 border border-[var(--ffxiv-border)]">
@@ -112,61 +116,78 @@ export function StatusDisplay({ status }: StatusDisplayProps) {
   }
 
   const condition = status.condition;
+  const progressPct = status.recipe.difficulty > 0 ? Math.round(status.progress / status.recipe.difficulty * 100) : 0;
+  const qualityPct = status.recipe.quality > 0 ? Math.round(status.quality / status.recipe.quality * 100) : 0;
 
   return (
     <div className="bg-[var(--ffxiv-card)] rounded-lg p-4 border border-[var(--ffxiv-border)]">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-medium text-[var(--ffxiv-text)]">製作狀態</h3>
-        <span className="text-xs text-[var(--ffxiv-muted)]">步驟 {status.step}</span>
+      <div className="flex items-center justify-between mb-1">
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="flex items-center gap-1 text-sm font-medium text-[var(--ffxiv-text)] hover:text-[var(--ffxiv-accent)] transition-colors"
+        >
+          <span className={`text-xs transition-transform ${collapsed ? '' : 'rotate-90'}`}>▶</span>
+          製作狀態
+          {collapsed && (
+            <span className="text-xs text-[var(--ffxiv-muted)] ml-1">
+              步驟{status.step} / 進展{progressPct}% / 品質{qualityPct}%
+            </span>
+          )}
+        </button>
+        {!collapsed && (
+          <span className="text-xs text-[var(--ffxiv-muted)]">步驟 {status.step}</span>
+        )}
       </div>
 
-      <div className="space-y-3">
-        {/* Progress */}
-        <ProgressBar
-          current={status.progress}
-          max={status.recipe.difficulty}
-          color="bg-blue-500"
-          label="進展"
-        />
+      {!collapsed && (
+        <div className="space-y-3 mt-3">
+          {/* Progress */}
+          <ProgressBar
+            current={status.progress}
+            max={status.recipe.difficulty}
+            color="bg-blue-500"
+            label="進展"
+          />
 
-        {/* Quality */}
-        <ProgressBar
-          current={status.quality}
-          max={status.recipe.quality}
-          color="bg-orange-500"
-          label="品質"
-        />
+          {/* Quality */}
+          <ProgressBar
+            current={status.quality}
+            max={status.recipe.quality}
+            color="bg-orange-500"
+            label="品質"
+          />
 
-        {/* Durability */}
-        <ProgressBar
-          current={status.durability}
-          max={status.recipe.durability}
-          color="bg-yellow-600"
-          label="耐久"
-        />
+          {/* Durability */}
+          <ProgressBar
+            current={status.durability}
+            max={status.recipe.durability}
+            color="bg-yellow-600"
+            label="耐久"
+          />
 
-        {/* CP */}
-        <ProgressBar
-          current={status.craft_points}
-          max={status.attributes.craft_points}
-          color="bg-pink-500"
-          label="CP"
-        />
+          {/* CP */}
+          <ProgressBar
+            current={status.craft_points}
+            max={status.attributes.craft_points}
+            color="bg-pink-500"
+            label="CP"
+          />
 
-        {/* Condition */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-[var(--ffxiv-muted)]">狀態:</span>
-          <span className={`text-xs px-2 py-0.5 rounded ${CONDITION_COLORS[condition] || CONDITION_COLORS.Normal}`}>
-            {CONDITION_NAMES[condition] || condition}
-          </span>
+          {/* Condition */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-[var(--ffxiv-muted)]">狀態:</span>
+            <span className={`text-xs px-2 py-0.5 rounded ${CONDITION_COLORS[condition] || CONDITION_COLORS.Normal}`}>
+              {CONDITION_NAMES[condition] || condition}
+            </span>
+          </div>
+
+          {/* Buffs */}
+          <div className="pt-2 border-t border-[var(--ffxiv-border)]">
+            <div className="text-xs text-[var(--ffxiv-muted)] mb-1">增益效果:</div>
+            <BuffDisplay buffs={status.buffs} />
+          </div>
         </div>
-
-        {/* Buffs */}
-        <div className="pt-2 border-t border-[var(--ffxiv-border)]">
-          <div className="text-xs text-[var(--ffxiv-muted)] mb-1">增益效果:</div>
-          <BuffDisplay buffs={status.buffs} />
-        </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 // Main crafting simulator component
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { Item, Recipe } from '../../types';
 import type {
@@ -63,6 +63,14 @@ export function CraftingSimulator() {
   const { stats, setStats, resetStats } = useCrafterStats();
   const { craftingConsumables, setCraftingConsumables } = useSettings();
   const { items, loading: itemsLoading } = useItemData();
+
+  // Detect mobile (single-column layout)
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 1024);
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 1024);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   // Calculate effective stats with consumables (only if items are loaded)
   const effectiveStats = itemsLoading
@@ -320,10 +328,12 @@ export function CraftingSimulator() {
             effectiveStats={effectiveStats}
             onStatsChange={setStats}
             onReset={resetStats}
+            defaultCollapsed={isMobile}
           />
           <ConsumableSelector
             consumables={craftingConsumables}
             onChange={setCraftingConsumables}
+            defaultCollapsed={isMobile}
           />
           {recipe && !itemsLoading && (
             <HqMaterialSelector
@@ -334,7 +344,7 @@ export function CraftingSimulator() {
               maxQuality={recipe.quality || 0}
             />
           )}
-          <StatusDisplay status={craftingStatus} />
+          <StatusDisplay status={craftingStatus} defaultCollapsed={isMobile} />
         </div>
 
         {/* Middle column - Actions and Rotation */}
@@ -343,11 +353,13 @@ export function CraftingSimulator() {
             rotation={rotation}
             onRemoveAction={handleRemoveAction}
             onClear={handleClearRotation}
+            defaultCollapsed={isMobile}
           />
           <ActionPalette
             status={craftingStatus}
             onActionClick={handleActionClick}
             disabled={isComplete || isFailed}
+            defaultCollapsed={isMobile}
           />
         </div>
 
