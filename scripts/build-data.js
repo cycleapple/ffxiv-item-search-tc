@@ -335,8 +335,9 @@ async function processItems() {
   // Build craftable items set
   const craftableItems = new Set();
   recipes.forEach((recipe) => {
+    const id = parseInt(recipe['#'] || recipe.key || '0');
     const itemId = parseInt(recipe['Item{Result}'] || recipe['ItemResult'] || '0');
-    if (itemId > 0) {
+    if (id > 0 && itemId > 0) {
       craftableItems.add(itemId);
     }
   });
@@ -574,7 +575,7 @@ async function processRecipes() {
     const id = parseInt(recipe['#'] || recipe.key || '0');
     const itemId = parseInt(recipe['Item{Result}'] || recipe['ItemResult'] || '0');
 
-    if (id <= 0 || itemId <= 0) return;
+    if (!id || id <= 0 || !itemId || itemId <= 0) return;
 
     const craftType = parseInt(recipe['CraftType'] || '0');
     const recipeLevelId = parseInt(recipe['RecipeLevelTable'] || recipe['RecipeLevel'] || '1');
