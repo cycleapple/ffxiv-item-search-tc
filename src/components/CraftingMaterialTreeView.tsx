@@ -30,24 +30,25 @@ interface AggregatedMaterial {
 const CRYSTAL_IDS = new Set([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
 
 /**
- * Collect all materials from a tree node recursively
+ * Collect all materials from a tree node recursively.
+ * Uses compound key (itemId-depth) so the same material at different depths
+ * is shown separately with correct quantities per level.
  */
 function collectMaterials(
   node: CraftingTreeNode,
-  materials: Map<number, AggregatedMaterial>,
+  materials: Map<string, AggregatedMaterial>,
   depth: number
 ): void {
   for (const child of node.children) {
-    const existing = materials.get(child.item.id);
+    const key = `${child.item.id}-${depth}`;
+    const existing = materials.get(key);
 
     if (existing) {
-      // Update existing material - accumulate quantity
+      // Same item at same depth - accumulate quantity
       existing.totalQuantity += child.quantity;
-      // Keep the minimum depth (closest to root)
-      existing.depth = Math.min(existing.depth, depth);
     } else {
-      // Add new material
-      materials.set(child.item.id, {
+      // Add new material entry for this depth
+      materials.set(key, {
         item: child.item,
         totalQuantity: child.quantity,
         marketPriceNQ: child.marketPriceNQ,
@@ -105,14 +106,14 @@ function getRarityClass(rarity: number): string {
 export function CraftingMaterialTreeView({ tree, qualityFilter, showCrystals }: CraftingMaterialTreeViewProps) {
   // Aggregate all materials
   const { materialsByDepth, maxDepth } = useMemo(() => {
-    const materials = new Map<number, AggregatedMaterial>();
+    const materials = new Map<string, AggregatedMaterial>();
     collectMaterials(tree, materials, 1);
 
     // Filter out crystals if not showing
     if (!showCrystals) {
-      for (const [id] of materials) {
-        if (CRYSTAL_IDS.has(id)) {
-          materials.delete(id);
+      for (const [key, mat] of materials) {
+        if (CRYSTAL_IDS.has(mat.item.id)) {
+          materials.delete(key);
         }
       }
     }
@@ -171,7 +172,7 @@ export function CraftingMaterialTreeView({ tree, qualityFilter, showCrystals }: 
 
                 return (
                   <div
-                    key={mat.item.id}
+                    key={`${mat.item.id}-${mat.depth}`}
                     className="bg-[var(--ffxiv-card)] border border-[var(--ffxiv-border)] rounded-lg p-3 min-w-[180px] max-w-[220px]"
                   >
                     {/* Item header */}
