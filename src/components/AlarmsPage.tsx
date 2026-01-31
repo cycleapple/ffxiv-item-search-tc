@@ -6,6 +6,7 @@ import { MapModal } from './MapModal';
 import { getNextSpawnInfo, formatCountdown, type SpawnInfo } from '../utils/eorzeanClock';
 import { getItemById } from '../services/searchService';
 import { getItemIconUrl } from '../services/xivapiService';
+import { getGatheringPointsForItem } from '../hooks/useItemData';
 
 interface AlarmWithInfo {
   alarm: AlarmEntry;
@@ -170,7 +171,21 @@ export function AlarmsPage() {
             const item = getItemById(alarm.itemId);
             const group = groups.find(g => g.id === alarm.groupId);
             const muted = !group?.enabled;
-            const hasLocation = alarm.placeName && alarm.x && alarm.y;
+
+            // Resolve location: prefer stored data, fall back to gathering point lookup
+            let locPlace = alarm.placeName;
+            let locX = alarm.x;
+            let locY = alarm.y;
+            if (!locPlace || !locX || !locY) {
+              const pts = getGatheringPointsForItem(alarm.itemId);
+              const match = pts.find(p => p.id === alarm.pointId);
+              if (match) {
+                locPlace = locPlace || match.placeName;
+                locX = locX || match.x;
+                locY = locY || match.y;
+              }
+            }
+            const hasLocation = locPlace && locX && locY;
 
             return (
               <div
@@ -224,17 +239,17 @@ export function AlarmsPage() {
                   {hasLocation && (
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-xs text-[var(--ffxiv-muted)]">
-                        {alarm.placeName}
+                        {locPlace}
                       </span>
                       <span className="text-xs text-[var(--ffxiv-highlight)]">
-                        X: {alarm.x!.toFixed(1)} Y: {alarm.y!.toFixed(1)}
+                        X: {locX!.toFixed(1)} Y: {locY!.toFixed(1)}
                       </span>
                       <button
                         onClick={() => setMapModal({
                           isOpen: true,
-                          zoneName: alarm.placeName!,
-                          x: alarm.x!,
-                          y: alarm.y!,
+                          zoneName: locPlace!,
+                          x: locX!,
+                          y: locY!,
                         })}
                         className="flex items-center gap-1 px-2 py-0.5 text-xs bg-[var(--ffxiv-accent)] hover:bg-[var(--ffxiv-accent-hover)] rounded transition-colors"
                         title="顯示地圖"
