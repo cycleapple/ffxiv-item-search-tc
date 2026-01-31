@@ -78,6 +78,62 @@ let globalTrades: Record<number, TradeItem[]> = {};
 
 let dataLoaded = false;
 let loadingPromise: Promise<void> | null = null;
+let secondaryLoadingPromise: Promise<void> | null = null;
+const secondaryListeners: Array<() => void> = [];
+
+function notifySecondaryListeners() {
+  secondaryListeners.forEach(fn => fn());
+}
+
+// Compact index field order (must match build-data.js output)
+const INDEX_FIELDS = ['id','name','icon','itemLevel','equipLevel','rarity','categoryId','categoryName','canBeHq','stackSize','isUntradable','isCraftable','isGatherable','patch'] as const;
+const BOOL_FIELDS = new Set(['canBeHq','isUntradable','isCraftable','isGatherable']);
+
+function decodeIndexItems(indexData: { fields: string[]; items: (string | number)[][]; categories: ItemCategory[] }): Record<number, Item> {
+  const fields = indexData.fields;
+  const items: Record<number, Item> = {};
+  for (const row of indexData.items) {
+    const obj: Record<string, unknown> = {};
+    for (let i = 0; i < fields.length; i++) {
+      const f = fields[i];
+      obj[f] = BOOL_FIELDS.has(f) ? (row[i] === 1) : row[i];
+    }
+    // Fields not in index default to empty
+    obj.description = '';
+    items[obj.id as number] = obj as unknown as Item;
+  }
+  return items;
+}
+
+// Full item data cache (loaded lazily for detail pages)
+let fullItemsLoaded = false;
+let fullItemsPromise: Promise<void> | null = null;
+
+async function loadFullItems(): Promise<void> {
+  if (fullItemsLoaded) return;
+  if (fullItemsPromise) return fullItemsPromise;
+  fullItemsPromise = (async () => {
+    try {
+      const resp = await fetch(`${import.meta.env.BASE_URL}data/items.json`);
+      if (!resp.ok) return;
+      const data = await resp.json();
+      // Merge full item data into globalItemData.items (preserving reference)
+      const fullItems = data.items || {};
+      for (const [id, item] of Object.entries(fullItems)) {
+        globalItemData.items[Number(id)] = item as Item;
+      }
+      fullItemsLoaded = true;
+    } catch (e) {
+      console.error('Failed to load full items:', e);
+    }
+  })();
+  return fullItemsPromise;
+}
+
+/** Load full item data on demand (for detail pages) */
+export function ensureFullItemData(): Promise<void> {
+  return loadFullItems();
+}
 
 async function loadAllData(): Promise<void> {
   if (dataLoaded) return;
@@ -85,98 +141,105 @@ async function loadAllData(): Promise<void> {
 
   loadingPromise = (async () => {
     try {
-      // Load all JSON data files in parallel
-      const [itemsResponse, recipesResponse, gatheringResponse, sourcesResponse, desynthResultsResponse, tradesResponse, multiNamesResponse] = await Promise.all([
-        fetch(`${import.meta.env.BASE_URL}data/items.json`),
-        fetch(`${import.meta.env.BASE_URL}data/recipes.json`),
-        fetch(`${import.meta.env.BASE_URL}data/gathering.json`),
-        fetch(`${import.meta.env.BASE_URL}data/sources.json`),
-        fetch(`${import.meta.env.BASE_URL}data/desynth-results.json`),
-        fetch(`${import.meta.env.BASE_URL}data/trades.json`),
+      // Phase 1: Load compact index (~2MB) + multilingual names for search
+      const [indexResponse, multiNamesResponse] = await Promise.all([
+        fetch(`${import.meta.env.BASE_URL}data/items-index.json`),
         fetch(`${import.meta.env.BASE_URL}data/item-names-multi.json`),
       ]);
 
-      if (!itemsResponse.ok) throw new Error('Failed to load items data');
+      if (!indexResponse.ok) throw new Error('Failed to load items index');
 
-      const itemsData = await itemsResponse.json();
+      const indexData = await indexResponse.json();
       globalItemData = {
-        items: itemsData.items || {},
-        categories: itemsData.categories || [],
+        items: decodeIndexItems(indexData),
+        categories: indexData.categories || [],
         loading: false,
         error: null,
       };
 
-      // Load multilingual names for search (optional)
       if (multiNamesResponse.ok) {
         const multiNamesData = await multiNamesResponse.json();
         setMultilingualNames(multiNamesData);
       }
 
-      // Initialize search index (will use multilingual names if loaded)
       initializeSearchIndex(globalItemData.items);
-
-      // Recipes (optional, may not exist yet)
-      if (recipesResponse.ok) {
-        const recipesData = await recipesResponse.json();
-        globalRecipeData = {
-          recipes: recipesData.recipes || {},
-          craftTypes: recipesData.craftTypes || [],
-          loading: false,
-          error: null,
-        };
-      } else {
-        globalRecipeData.loading = false;
-      }
-
-      // Gathering (optional, may not exist yet)
-      if (gatheringResponse.ok) {
-        const gatheringData = await gatheringResponse.json();
-        globalGatheringData = {
-          points: gatheringData.points || {},
-          gatheringTypes: gatheringData.gatheringTypes || [],
-          places: gatheringData.places || {},
-          loading: false,
-          error: null,
-        };
-      } else {
-        globalGatheringData.loading = false;
-      }
-
-      // Sources (optional, may not exist yet)
-      if (sourcesResponse.ok) {
-        const sourcesData = await sourcesResponse.json();
-        globalSourcesData = {
-          sources: sourcesData.sources || {},
-          loading: false,
-          error: null,
-        };
-      } else {
-        globalSourcesData.loading = false;
-      }
-
-      // Desynth results (what you get by desynthing this item)
-      if (desynthResultsResponse.ok) {
-        const desynthData = await desynthResultsResponse.json();
-        globalDesynthResults = desynthData.results || {};
-      }
-
-      // Trades (what items you can buy with this currency)
-      if (tradesResponse.ok) {
-        globalTrades = await tradesResponse.json();
-      }
-
       dataLoaded = true;
+
+      // Phase 2: Load secondary data + full items in background
+      secondaryLoadingPromise = loadSecondaryData();
+      loadFullItems(); // pre-warm full item data
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       globalItemData.error = errorMessage;
       globalItemData.loading = false;
-      globalRecipeData.loading = false;
-      globalGatheringData.loading = false;
-      globalSourcesData.loading = false;
     }
   })();
 
   return loadingPromise;
+}
+
+async function loadSecondaryData(): Promise<void> {
+  try {
+    const [recipesResponse, gatheringResponse, sourcesResponse, desynthResultsResponse, tradesResponse] = await Promise.all([
+      fetch(`${import.meta.env.BASE_URL}data/recipes.json`),
+      fetch(`${import.meta.env.BASE_URL}data/gathering.json`),
+      fetch(`${import.meta.env.BASE_URL}data/sources.json`),
+      fetch(`${import.meta.env.BASE_URL}data/desynth-results.json`),
+      fetch(`${import.meta.env.BASE_URL}data/trades.json`),
+    ]);
+
+    if (recipesResponse.ok) {
+      const recipesData = await recipesResponse.json();
+      globalRecipeData = {
+        recipes: recipesData.recipes || {},
+        craftTypes: recipesData.craftTypes || [],
+        loading: false,
+        error: null,
+      };
+    } else {
+      globalRecipeData.loading = false;
+    }
+
+    if (gatheringResponse.ok) {
+      const gatheringData = await gatheringResponse.json();
+      globalGatheringData = {
+        points: gatheringData.points || {},
+        gatheringTypes: gatheringData.gatheringTypes || [],
+        places: gatheringData.places || {},
+        loading: false,
+        error: null,
+      };
+    } else {
+      globalGatheringData.loading = false;
+    }
+
+    if (sourcesResponse.ok) {
+      const sourcesData = await sourcesResponse.json();
+      globalSourcesData = {
+        sources: sourcesData.sources || {},
+        loading: false,
+        error: null,
+      };
+    } else {
+      globalSourcesData.loading = false;
+    }
+
+    if (desynthResultsResponse.ok) {
+      const desynthData = await desynthResultsResponse.json();
+      globalDesynthResults = desynthData.results || {};
+    }
+
+    if (tradesResponse.ok) {
+      globalTrades = await tradesResponse.json();
+    }
+  } catch (error) {
+    console.error('Failed to load secondary data:', error);
+    globalRecipeData.loading = false;
+    globalGatheringData.loading = false;
+    globalSourcesData.loading = false;
+  }
+
+  notifySecondaryListeners();
 }
 
 /**
@@ -213,93 +276,47 @@ export function useItemData(): ItemData {
 }
 
 /**
- * Hook to access recipe data
+ * Hook that subscribes to secondary data loading completion
  */
-export function useRecipeData(): RecipeData {
-  const [state, setState] = useState<RecipeData>(() =>
-    dataLoaded ? globalRecipeData : { ...globalRecipeData }
-  );
+function useSecondaryData<T>(getCurrent: () => T): T {
+  const [state, setState] = useState<T>(getCurrent);
 
   useEffect(() => {
-    if (dataLoaded) {
-      if (state.loading !== globalRecipeData.loading) {
-        setState(globalRecipeData);
-      }
-      return;
+    // If secondary data already loaded, sync state
+    if (!globalRecipeData.loading || !globalGatheringData.loading || !globalSourcesData.loading) {
+      setState(getCurrent());
     }
 
-    if (!loadingPromise) {
-      loadAllData().then(() => {
-        setState({ ...globalRecipeData });
-      });
-    } else {
-      loadingPromise.then(() => {
-        setState({ ...globalRecipeData });
-      });
-    }
+    const listener = () => setState(getCurrent());
+    secondaryListeners.push(listener);
+    return () => {
+      const idx = secondaryListeners.indexOf(listener);
+      if (idx >= 0) secondaryListeners.splice(idx, 1);
+    };
   }, []);
 
   return state;
+}
+
+/**
+ * Hook to access recipe data
+ */
+export function useRecipeData(): RecipeData {
+  return useSecondaryData(() => ({ ...globalRecipeData }));
 }
 
 /**
  * Hook to access gathering data
  */
 export function useGatheringData(): GatheringData {
-  const [state, setState] = useState<GatheringData>(() =>
-    dataLoaded ? globalGatheringData : { ...globalGatheringData }
-  );
-
-  useEffect(() => {
-    if (dataLoaded) {
-      if (state.loading !== globalGatheringData.loading) {
-        setState(globalGatheringData);
-      }
-      return;
-    }
-
-    if (!loadingPromise) {
-      loadAllData().then(() => {
-        setState({ ...globalGatheringData });
-      });
-    } else {
-      loadingPromise.then(() => {
-        setState({ ...globalGatheringData });
-      });
-    }
-  }, []);
-
-  return state;
+  return useSecondaryData(() => ({ ...globalGatheringData }));
 }
 
 /**
  * Hook to access sources data
  */
 export function useSourcesData(): SourcesData {
-  const [state, setState] = useState<SourcesData>(() =>
-    dataLoaded ? globalSourcesData : { ...globalSourcesData }
-  );
-
-  useEffect(() => {
-    if (dataLoaded) {
-      if (state.loading !== globalSourcesData.loading) {
-        setState(globalSourcesData);
-      }
-      return;
-    }
-
-    if (!loadingPromise) {
-      loadAllData().then(() => {
-        setState({ ...globalSourcesData });
-      });
-    } else {
-      loadingPromise.then(() => {
-        setState({ ...globalSourcesData });
-      });
-    }
-  }, []);
-
-  return state;
+  return useSecondaryData(() => ({ ...globalSourcesData }));
 }
 
 /**

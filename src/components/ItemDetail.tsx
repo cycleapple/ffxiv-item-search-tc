@@ -1,6 +1,6 @@
 // Item detail page component
 import { useParams, useNavigate } from 'react-router-dom';
-import { useItemData, useRecipeData, useGatheringData, useSourcesData, getRecipesUsingItem } from '../hooks/useItemData';
+import { useItemData, useRecipeData, useGatheringData, useSourcesData, getRecipesUsingItem, ensureFullItemData } from '../hooks/useItemData';
 import { getItemById } from '../services/searchService';
 import { getItemIconUrl } from '../services/xivapiService';
 import { ObtainView } from './ObtainView';
@@ -70,6 +70,12 @@ export function ItemDetail() {
   const [sources, setSources] = useState<ItemSource[]>([]);
   const [usedForRecipes, setUsedForRecipes] = useState<Recipe[]>([]);
   const [activeTab, setActiveTab] = useState<TabType>(getDefaultTab());
+  const [fullDataReady, setFullDataReady] = useState(false);
+
+  // Ensure full item data (descriptions, equipStats, foodEffects) is loaded
+  useEffect(() => {
+    ensureFullItemData().then(() => setFullDataReady(true));
+  }, []);
 
   useEffect(() => {
     if (!itemsLoading && itemId) {
@@ -88,7 +94,7 @@ export function ItemDetail() {
       // Get recipes that use this item as ingredient
       setUsedForRecipes(getRecipesUsingItem(itemId));
     }
-  }, [itemsLoading, itemId, recipesData, gatheringData, sourcesData]);
+  }, [itemsLoading, itemId, recipesData, gatheringData, sourcesData, fullDataReady]);
 
   if (itemsLoading) {
     return (

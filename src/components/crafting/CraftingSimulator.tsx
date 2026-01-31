@@ -13,7 +13,7 @@ import { getItemById, getRecipesForItem } from '../../services/searchService';
 import { getItemIconUrl } from '../../services/xivapiService';
 import { useCrafterStats } from '../../hooks/useCrafterStats';
 import { useSettings } from '../../hooks/useSettings';
-import { useItemData } from '../../hooks/useItemData';
+import { useItemData, ensureFullItemData } from '../../hooks/useItemData';
 import { createStatus, simulate } from '../../services/craftingWasm';
 
 import { CrafterStatsForm } from './CrafterStatsForm';
@@ -63,6 +63,9 @@ export function CraftingSimulator() {
   const { stats, setStats, resetStats } = useCrafterStats();
   const { craftingConsumables, setCraftingConsumables } = useSettings();
   const { items, loading: itemsLoading } = useItemData();
+
+  // Ensure full item data (foodEffects) is available for consumable calculations
+  useEffect(() => { ensureFullItemData(); }, []);
 
   // Detect mobile (single-column layout)
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 1024);

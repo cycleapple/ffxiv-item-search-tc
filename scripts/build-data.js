@@ -514,7 +514,23 @@ async function processItems() {
   };
 
   writeFileSync(join(OUTPUT_PATH, 'items.json'), JSON.stringify(output));
+
+  // Generate compact items-index.json for fast initial load (~2MB vs ~24MB)
+  // Format: { categories, fields: [...fieldNames], items: [[val,val,...], ...] }
+  const indexFields = ['id','name','icon','itemLevel','equipLevel','rarity','categoryId','categoryName','canBeHq','stackSize','isUntradable','isCraftable','isGatherable','patch'];
+  const indexItems = Object.values(itemsOutput).map(item =>
+    indexFields.map(f => {
+      const v = item[f];
+      if (v === true) return 1;
+      if (v === false || v === undefined || v === null) return 0;
+      return v;
+    })
+  );
+  const indexOutput = { categories: usedCategories, fields: indexFields, items: indexItems };
+  writeFileSync(join(OUTPUT_PATH, 'items-index.json'), JSON.stringify(indexOutput));
+
   console.log(`Processed ${count} items (${equipCount} with equipment stats, ${foodCount} with food effects), ${usedCategories.length} categories`);
+  console.log(`Generated items-index.json: ${(JSON.stringify(indexOutput).length / 1024 / 1024).toFixed(1)}MB (compact) vs ${(JSON.stringify(output).length / 1024 / 1024).toFixed(1)}MB (full)`);
 }
 
 /**
