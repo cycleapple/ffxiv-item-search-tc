@@ -22,6 +22,7 @@ export function AlarmsPage() {
   const [mapModal, setMapModal] = useState<{
     isOpen: boolean;
     zoneName: string;
+    mapId?: number;
     x: number;
     y: number;
   }>({ isOpen: false, zoneName: '', x: 0, y: 0 });
@@ -174,6 +175,7 @@ export function AlarmsPage() {
 
             // Resolve location: prefer stored data, fall back to gathering point lookup
             let locPlace = alarm.placeName;
+            let locMapId = alarm.mapId;
             let locX = alarm.x;
             let locY = alarm.y;
             if (!locPlace || !locX || !locY) {
@@ -181,6 +183,7 @@ export function AlarmsPage() {
               const match = pts.find(p => p.id === alarm.pointId);
               if (match) {
                 locPlace = locPlace || match.placeName;
+                locMapId = locMapId || match.mapId;
                 locX = locX || match.x;
                 locY = locY || match.y;
               }
@@ -248,6 +251,7 @@ export function AlarmsPage() {
                         onClick={() => setMapModal({
                           isOpen: true,
                           zoneName: locPlace!,
+                          mapId: locMapId,
                           x: locX!,
                           y: locY!,
                         })}
@@ -309,6 +313,7 @@ export function AlarmsPage() {
         isOpen={mapModal.isOpen}
         onClose={() => setMapModal({ ...mapModal, isOpen: false })}
         zoneName={mapModal.zoneName}
+        mapId={mapModal.mapId}
         x={mapModal.x}
         y={mapModal.y}
       />

@@ -35,6 +35,7 @@ interface ZoneMapInfo {
 
 // Zone map cache (loaded from data)
 let zoneMapCache: Record<string, ZoneMapInfo> = {};
+let zoneMapByIdCache: Record<number, { info: ZoneMapInfo; name: string }> = {};
 let loadingPromise: Promise<Record<string, ZoneMapInfo>> | null = null;
 
 async function loadZoneMapData(): Promise<Record<string, ZoneMapInfo>> {
@@ -45,6 +46,12 @@ async function loadZoneMapData(): Promise<Record<string, ZoneMapInfo>> {
     .then((res) => res.json())
     .then((data) => {
       zoneMapCache = (data.maps || {}) as Record<string, ZoneMapInfo>;
+      zoneMapByIdCache = {};
+      Object.entries(zoneMapCache).forEach(([name, info]) => {
+        if (info.id) {
+          zoneMapByIdCache[info.id] = { info, name };
+        }
+      });
       return zoneMapCache;
     })
     .catch((err) => {
@@ -68,20 +75,29 @@ function gameCoordToPercent(coord: number, sizeFactor: number): number {
   return (coord - 1) * sizeFactor / 40.96;
 }
 
-export function MapModal({ isOpen, onClose, zoneName, x, y, npcName }: MapModalProps) {
+export function MapModal({ isOpen, onClose, zoneName, x, y, npcName, mapId }: MapModalProps) {
   const [mapInfo, setMapInfo] = useState<ZoneMapInfo | null>(null);
+  const [mapName, setMapName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Load zone map data and find the map for this zone
   useEffect(() => {
-    if (!isOpen || !zoneName) return;
+    if (!isOpen || (!zoneName && !mapId)) return;
 
     setLoading(true);
     loadZoneMapData().then((maps) => {
-      setMapInfo(maps[zoneName] || null);
+      // Try by name first, then by mapId
+      let found = zoneName ? maps[zoneName] : null;
+      let resolvedName: string | null = null;
+      if (!found && mapId && zoneMapByIdCache[mapId]) {
+        found = zoneMapByIdCache[mapId].info;
+        resolvedName = zoneMapByIdCache[mapId].name;
+      }
+      setMapInfo(found || null);
+      setMapName(resolvedName);
       setLoading(false);
     });
-  }, [isOpen, zoneName]);
+  }, [isOpen, zoneName, mapId]);
 
   // Close on escape key
   useEffect(() => {
@@ -119,7 +135,9 @@ export function MapModal({ isOpen, onClose, zoneName, x, y, npcName }: MapModalP
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-[var(--ffxiv-border)]">
           <div>
-            <h3 className="font-medium text-[var(--ffxiv-text)]">{zoneName}</h3>
+            <h3 className="font-medium text-[var(--ffxiv-text)]">
+              {mapName && mapName !== zoneName ? `${mapName} - ${zoneName}` : zoneName}
+            </h3>
             {npcName && (
               <p className="text-sm text-[var(--ffxiv-muted)]">{npcName}</p>
             )}
