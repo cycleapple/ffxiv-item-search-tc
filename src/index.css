@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Alarm pulse animation for active gathering nodes */
+@keyframes alarm-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+  50% { box-shadow: 0 0 12px 2px rgba(34, 197, 94, 0.3); }
+}
+
 /* === CSS Variables - 匹配工具箱系列風格 === */
 :root {
   /* 背景色 */

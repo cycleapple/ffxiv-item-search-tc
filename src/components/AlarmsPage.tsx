@@ -219,10 +219,10 @@ export function AlarmsPage() {
             return (
               <div
                 key={`${alarm.itemId}-${alarm.pointId}`}
-                className={`flex items-center gap-3 p-3 bg-[var(--ffxiv-bg)] rounded-lg border transition-colors ${
+                className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
                   bestSpawn.active
-                    ? 'border-green-500/60'
-                    : 'border-[var(--ffxiv-border)]'
+                    ? 'border-green-500/60 bg-green-900/10 animate-[alarm-pulse_2s_ease-in-out_infinite]'
+                    : 'bg-[var(--ffxiv-bg)] border-[var(--ffxiv-border)]'
                 } ${muted ? 'opacity-50' : ''}`}
               >
                 {/* Item icon */}
