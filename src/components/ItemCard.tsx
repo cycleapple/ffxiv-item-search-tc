@@ -3,13 +3,17 @@ import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import type { Item } from '../types';
 import { getItemIconUrl } from '../services/xivapiService';
+import { getMultilingualNames } from '../services/searchService';
 import { CopyButton } from './CopyButton';
 import { AddToPriceListButton } from './AddToPriceListButton';
 import { AlarmButton } from './AlarmButton';
 import { getGatheringPointsForItem } from '../hooks/useItemData';
 
+const LANG_FLAGS: Record<string, string> = { en: '🇺🇸', ja: '🇯🇵', cn: '🇨🇳' };
+
 interface ItemCardProps {
   item: Item;
+  query?: string;
 }
 
 function getRarityClass(rarity: number): string {
@@ -29,8 +33,24 @@ function getRarityClass(rarity: number): string {
   }
 }
 
-export const ItemCard = memo(function ItemCard({ item }: ItemCardProps) {
+export const ItemCard = memo(function ItemCard({ item, query }: ItemCardProps) {
   const iconUrl = getItemIconUrl(item.icon);
+
+  // Find matched non-TC language name
+  const matchedLang = (() => {
+    if (!query || !query.trim()) return null;
+    const q = query.trim().toLowerCase();
+    if (item.name.toLowerCase().includes(q)) return null;
+    const names = getMultilingualNames(item.id);
+    if (!names) return null;
+    for (const lang of ['en', 'ja', 'cn'] as const) {
+      const name = names[lang];
+      if (name && name.toLowerCase().includes(q)) {
+        return { lang, name };
+      }
+    }
+    return null;
+  })();
 
   return (
     <Link
@@ -64,6 +84,12 @@ export const ItemCard = memo(function ItemCard({ item }: ItemCardProps) {
               Lv.{item.itemLevel}
             </span>
           </div>
+          {matchedLang && (
+            <div className="text-xs text-[var(--ffxiv-muted)] truncate">
+              <span className="text-sm">{LANG_FLAGS[matchedLang.lang]}</span>{' '}
+              {matchedLang.name}
+            </div>
+          )}
           <div className="mt-1 flex items-center gap-2 text-xs text-[var(--ffxiv-muted)]">
             <span>{item.categoryName}</span>
             {item.isCraftable && (

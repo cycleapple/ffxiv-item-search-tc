@@ -9,6 +9,7 @@ interface ItemListProps {
   hasSearched?: boolean;  // Whether user has initiated a search
   hasMore?: boolean;      // Whether there are more results to load
   onLoadMore?: () => void;
+  query?: string;
 }
 
 export function ItemList({
@@ -18,6 +19,7 @@ export function ItemList({
   hasSearched = true,
   hasMore = false,
   onLoadMore,
+  query,
 }: ItemListProps) {
   if (loading) {
     return (
@@ -49,16 +51,15 @@ export function ItemList({
         <h2 className="text-xl font-medium text-[var(--ffxiv-text)] mb-2">
           搜尋 FFXIV 物品
         </h2>
-        <p className="text-[var(--ffxiv-muted)] mb-6 max-w-md mx-auto">
-          輸入物品名稱開始搜尋，或使用進階篩選條件
+        <p className="text-[var(--ffxiv-muted)] mb-4 max-w-md mx-auto">
+          輸入物品名稱開始搜尋
         </p>
-        <div className="flex flex-wrap justify-center gap-2 text-sm text-[var(--ffxiv-muted)]">
-          <span className="px-3 py-1.5 bg-[var(--ffxiv-card)] rounded-full">武器</span>
-          <span className="px-3 py-1.5 bg-[var(--ffxiv-card)] rounded-full">防具</span>
-          <span className="px-3 py-1.5 bg-[var(--ffxiv-card)] rounded-full">素材</span>
-          <span className="px-3 py-1.5 bg-[var(--ffxiv-card)] rounded-full">消耗品</span>
-          <span className="px-3 py-1.5 bg-[var(--ffxiv-card)] rounded-full">傢俱</span>
-        </div>
+        <p className="text-xs text-[var(--ffxiv-muted)]">
+          支援繁中、簡中、日文、英文搜尋
+        </p>
+        <p className="mt-2 text-xs text-[var(--ffxiv-muted)]">
+          💡 可使用查價清單比價、採集鬧鐘提醒、製作模擬器
+        </p>
       </div>
     );
   }
@@ -99,7 +100,7 @@ export function ItemList({
       </div>
       <div className="grid gap-2">
         {results.map((result) => (
-          <ItemCard key={result.item.id} item={result.item} />
+          <ItemCard key={result.item.id} item={result.item} query={query} />
         ))}
       </div>
       {hasMore && onLoadMore && (

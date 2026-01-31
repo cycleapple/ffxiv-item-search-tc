@@ -1,7 +1,7 @@
 // Item detail page component
 import { useParams, useNavigate } from 'react-router-dom';
 import { useItemData, useRecipeData, useGatheringData, useSourcesData, getRecipesUsingItem, ensureFullItemData } from '../hooks/useItemData';
-import { getItemById } from '../services/searchService';
+import { getItemById, getMultilingualNames } from '../services/searchService';
 import { getItemIconUrl } from '../services/xivapiService';
 import { ObtainView } from './ObtainView';
 import { RecipeView } from './RecipeView';
@@ -162,6 +162,24 @@ export function ItemDetail() {
                 <CopyButton text={item.name} />
               </div>
               <div className="text-sm text-[var(--ffxiv-muted)]">ID: {item.id}</div>
+              {(() => {
+                const names = getMultilingualNames(item.id);
+                if (!names) return null;
+                const entries: { label: string; value: string }[] = [];
+                if (names.en) entries.push({ label: '🇺🇸', value: names.en });
+                if (names.ja) entries.push({ label: '🇯🇵', value: names.ja });
+                if (names.cn) entries.push({ label: '🇨🇳', value: names.cn });
+                if (entries.length === 0) return null;
+                return (
+                  <div className="text-xs text-[var(--ffxiv-muted)] mt-1 space-x-3">
+                    {entries.map((e) => (
+                      <span key={e.label}>
+                        <span className="text-sm">{e.label}</span> {e.value}
+                      </span>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Add to price list button */}

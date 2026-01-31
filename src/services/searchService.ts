@@ -26,6 +26,13 @@ export function setMultilingualNames(names: MultilingualNames): void {
 }
 
 /**
+ * Get multilingual names for an item
+ */
+export function getMultilingualNames(itemId: number): { en?: string; ja?: string; cn?: string } | undefined {
+  return multilingualNames[itemId];
+}
+
+/**
  * Initialize the search index with items data.
  * Populates itemsMap immediately, defers FlexSearch indexing to background.
  */

@@ -59,6 +59,7 @@ function HomePage() {
         hasSearched={hasSearched}
         hasMore={hasMore}
         onLoadMore={loadMore}
+        query={filters.query}
       />
     </div>
   );
