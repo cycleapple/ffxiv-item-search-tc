@@ -80,7 +80,6 @@ let globalTrades: Record<number, TradeItem[]> = {};
 
 let dataLoaded = false;
 let loadingPromise: Promise<void> | null = null;
-let secondaryLoadingPromise: Promise<void> | null = null;
 const secondaryListeners: Array<() => void> = [];
 const statusListeners: Array<(status: string) => void> = [];
 
@@ -187,7 +186,7 @@ async function loadAllData(): Promise<void> {
       dataLoaded = true;
 
       // Phase 2: Load secondary data + full items in background
-      secondaryLoadingPromise = loadSecondaryData();
+      loadSecondaryData();
       loadFullItems();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
