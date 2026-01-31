@@ -298,9 +298,12 @@ export function AlarmsPage() {
                 {/* Countdown */}
                 <div className="flex-shrink-0 text-right">
                   {bestSpawn.active ? (
-                    <span className="text-green-400 font-mono text-sm">
-                      採集中
-                    </span>
+                    <div className="text-right">
+                      <span className="text-green-400 font-mono text-sm">採集中</span>
+                      <div className="text-green-400/70 font-mono text-xs">
+                        剩餘 {formatCountdown(Math.floor((1 - bestSpawn.progress) * alarm.duration * 175 / 60))}
+                      </div>
+                    </div>
                   ) : (
                     <span className="text-[var(--ffxiv-muted)] font-mono text-sm">
                       {formatCountdown(bestSpawn.countdown)}

@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef, type ReactNode } from 'react';
 import { getNextSpawnInfo } from '../utils/eorzeanClock';
+import { getItemById } from '../services/searchService';
 
 export interface AlarmEntry {
   itemId: number;
@@ -94,8 +95,10 @@ export function AlarmProvider({ children }: { children: ReactNode }) {
           setTimeout(() => notifiedRef.current.delete(key), clearAfter);
 
           if (Notification.permission === 'granted') {
+            const itemData = getItemById(alarm.itemId);
+            const itemName = itemData?.name || `物品 #${alarm.itemId}`;
             new Notification('採集鬧鐘', {
-              body: `物品 #${alarm.itemId} 即將出現！(ET ${String(info.startHour).padStart(2, '0')}:00)`,
+              body: `${itemName} 即將出現！(ET ${String(info.startHour).padStart(2, '0')}:00)`,
               icon: `${import.meta.env.BASE_URL}favicon.ico`,
             });
           }
