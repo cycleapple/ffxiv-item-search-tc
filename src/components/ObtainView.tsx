@@ -7,6 +7,27 @@ import { Link } from 'react-router-dom';
 import { CopyButton } from './CopyButton';
 import { MapModal } from './MapModal';
 
+// Cache for zone map name by ID
+let zoneMapNameByIdCache: Record<number, string> | null = null;
+
+async function loadZoneMapNameById(): Promise<Record<number, string>> {
+  if (zoneMapNameByIdCache) return zoneMapNameByIdCache;
+  try {
+    const res = await fetch(`${import.meta.env.BASE_URL}data/zone-maps.json`);
+    const data = await res.json();
+    const maps = (data.maps || {}) as Record<string, { id: number }>;
+    zoneMapNameByIdCache = {};
+    Object.entries(maps).forEach(([name, info]) => {
+      if (info.id) {
+        zoneMapNameByIdCache![info.id] = name;
+      }
+    });
+    return zoneMapNameByIdCache;
+  } catch {
+    return {};
+  }
+}
+
 // Cache for CN quest names
 let questCNNamesCache: Record<number, string> | null = null;
 
@@ -201,11 +222,13 @@ export function ObtainView({ itemId, sources, recipes, gatheringPoints }: Obtain
 
   const [questCNNames, setQuestCNNames] = useState<Record<number, string>>({});
   const [instanceCNNames, setInstanceCNNames] = useState<Record<string, string>>({});
+  const [mapNameById, setMapNameById] = useState<Record<number, string>>({});
 
-  // Load CN names for Huiji Wiki links
+  // Load CN names for Huiji Wiki links and zone map names
   useEffect(() => {
     loadQuestCNNames().then(setQuestCNNames);
     loadInstanceCNNames().then(setInstanceCNNames);
+    loadZoneMapNameById().then(setMapNameById);
   }, []);
 
   const allSources: SourceDisplay[] = [];
@@ -665,7 +688,11 @@ export function ObtainView({ itemId, sources, recipes, gatheringPoints }: Obtain
                               className="w-5 h-5"
                             />
                           )}
-                          <span className="font-medium">{point.placeName}</span>
+                          <span className="font-medium">
+                            {point.mapId && mapNameById[point.mapId] && mapNameById[point.mapId] !== point.placeName
+                              ? `${mapNameById[point.mapId]} - ${point.placeName}`
+                              : point.placeName}
+                          </span>
                         </div>
                         <span className="text-xs text-[var(--ffxiv-muted)]">Lv.{point.level}</span>
                       </div>

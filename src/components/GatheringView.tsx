@@ -71,14 +71,16 @@ const MAP_BASE_URL = 'https://xivapi.com/m';
 // Zone map cache - by name and by id
 let zoneMapCache: Record<string, ZoneMapInfo> = {};
 let zoneMapByIdCache: Record<number, ZoneMapInfo> = {};
+let zoneMapNameByIdCache: Record<number, string> = {};
 let zoneMapLoaded = false;
 
 async function loadZoneMapData(): Promise<{
   byName: Record<string, ZoneMapInfo>;
   byId: Record<number, ZoneMapInfo>;
+  nameById: Record<number, string>;
 }> {
   if (zoneMapLoaded) {
-    return { byName: zoneMapCache, byId: zoneMapByIdCache };
+    return { byName: zoneMapCache, byId: zoneMapByIdCache, nameById: zoneMapNameByIdCache };
   }
 
   try {
@@ -88,16 +90,18 @@ async function loadZoneMapData(): Promise<{
 
     // Create lookup by map ID
     zoneMapByIdCache = {};
-    Object.values(zoneMapCache).forEach((info) => {
+    zoneMapNameByIdCache = {};
+    Object.entries(zoneMapCache).forEach(([name, info]) => {
       if (info.id) {
         zoneMapByIdCache[info.id] = info;
+        zoneMapNameByIdCache[info.id] = name;
       }
     });
 
     zoneMapLoaded = true;
-    return { byName: zoneMapCache, byId: zoneMapByIdCache };
+    return { byName: zoneMapCache, byId: zoneMapByIdCache, nameById: zoneMapNameByIdCache };
   } catch {
-    return { byName: {}, byId: {} };
+    return { byName: {}, byId: {}, nameById: {} };
   }
 }
 
@@ -147,11 +151,13 @@ interface ZoneGroup {
 
 export function GatheringView({ points }: GatheringViewProps) {
   const [zoneMapsById, setZoneMapsById] = useState<Record<number, ZoneMapInfo>>({});
+  const [mapNameById, setMapNameById] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadZoneMapData().then(({ byId }) => {
+    loadZoneMapData().then(({ byId, nameById }) => {
       setZoneMapsById(byId);
+      setMapNameById(nameById);
       setLoading(false);
     });
   }, []);
@@ -233,7 +239,11 @@ export function GatheringView({ points }: GatheringViewProps) {
                     <span className="text-yellow-400" title="限時採集點">⏰</span>
                   )}
                 </div>
-                <div className="text-sm text-[var(--ffxiv-muted)]">{group.zoneName}</div>
+                <div className="text-sm text-[var(--ffxiv-muted)]">
+                  {mapId && mapNameById[mapId] && mapNameById[mapId] !== group.zoneName
+                    ? `${mapNameById[mapId]} - ${group.zoneName}`
+                    : group.zoneName}
+                </div>
               </div>
             </div>
 
