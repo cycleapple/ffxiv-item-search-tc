@@ -6,6 +6,7 @@ import { getItemIconUrl } from '../services/xivapiService';
 import { Link } from 'react-router-dom';
 import { CopyButton } from './CopyButton';
 import { MapModal } from './MapModal';
+import GatheringTimer from './GatheringTimer';
 
 // Cache for zone map name by ID
 let zoneMapNameByIdCache: Record<number, string> | null = null;
@@ -157,6 +158,8 @@ interface GatheringPointDisplay {
   timeRestriction?: boolean;
   startTime?: number;
   endTime?: number;
+  spawns?: number[];
+  duration?: number;
   gatheringType?: number;
 }
 
@@ -290,6 +293,8 @@ export function ObtainView({ itemId, sources, recipes, gatheringPoints }: Obtain
         timeRestriction: p.timeRestriction,
         startTime: p.startTime,
         endTime: p.endTime,
+        spawns: p.spawns,
+        duration: p.duration,
         gatheringType: p.gatheringType,
       })),
     });
@@ -712,6 +717,9 @@ export function ObtainView({ itemId, sources, recipes, gatheringPoints }: Obtain
                           )}
                         </div>
                       ) : null}
+                      {point.spawns && point.spawns.length > 0 && point.duration && (
+                        <GatheringTimer spawns={point.spawns} duration={point.duration} />
+                      )}
                     </div>
                   );
                 })}

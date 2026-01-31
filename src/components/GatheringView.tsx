@@ -5,6 +5,7 @@ import type { GatheringPoint } from '../types';
 import { getItemById } from '../services/searchService';
 import { getItemIconUrl } from '../services/xivapiService';
 import { CopyButton } from './CopyButton';
+import GatheringTimer from './GatheringTimer';
 
 interface GatheringViewProps {
   points: GatheringPoint[];
@@ -401,6 +402,11 @@ export function GatheringView({ points }: GatheringViewProps) {
                               {spawnWindows.join(' / ')}
                             </span>
                           </div>
+                        )}
+
+                        {/* Countdown timer for timed nodes */}
+                        {point.spawns && point.spawns.length > 0 && point.duration && (
+                          <GatheringTimer spawns={point.spawns} duration={point.duration} />
                         )}
 
                         {/* Perception requirement */}
