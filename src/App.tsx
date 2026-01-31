@@ -1,19 +1,21 @@
 // Main App component
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { SearchBar } from './components/SearchBar';
 import { FilterPanel } from './components/FilterPanel';
 import { ItemList } from './components/ItemList';
-import { ItemDetail } from './components/ItemDetail';
-import { CraftingSimulator } from './components/crafting';
 import { SettingsModal } from './components/SettingsModal';
-import { PriceCheckListPage } from './components/PriceCheckListPage';
 import { useItemData } from './hooks/useItemData';
 import { useSearch } from './hooks/useSearch';
 import { PriceCheckListProvider, usePriceCheckList } from './contexts/PriceCheckListContext';
 import { AlarmProvider, useAlarms } from './contexts/AlarmContext';
 import { EorzeanClock } from './components/EorzeanClock';
-import { AlarmsPage } from './components/AlarmsPage';
+
+// Lazy-loaded route components
+const ItemDetail = lazy(() => import('./components/ItemDetail').then(m => ({ default: m.ItemDetail })));
+const CraftingSimulator = lazy(() => import('./components/crafting').then(m => ({ default: m.CraftingSimulator })));
+const PriceCheckListPage = lazy(() => import('./components/PriceCheckListPage').then(m => ({ default: m.PriceCheckListPage })));
+const AlarmsPage = lazy(() => import('./components/AlarmsPage').then(m => ({ default: m.AlarmsPage })));
 
 function HomePage() {
   const { categories, loading, error } = useItemData();
@@ -165,13 +167,19 @@ function AppContent() {
             <div className="text-[var(--ffxiv-muted)]">載入物品資料中...</div>
           </div>
         ) : (
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/item/:id" element={<ItemDetail />} />
-            <Route path="/craft/:itemId" element={<CraftingSimulator />} />
-            <Route path="/pricelist" element={<PriceCheckListPage />} />
-            <Route path="/alarms" element={<AlarmsPage />} />
-          </Routes>
+          <Suspense fallback={
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-10 w-10 border-3 border-[var(--ffxiv-border)] border-t-[var(--ffxiv-accent)] mb-4"></div>
+            </div>
+          }>
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/item/:id" element={<ItemDetail />} />
+              <Route path="/craft/:itemId" element={<CraftingSimulator />} />
+              <Route path="/pricelist" element={<PriceCheckListPage />} />
+              <Route path="/alarms" element={<AlarmsPage />} />
+            </Routes>
+          </Suspense>
         )}
       </main>
 

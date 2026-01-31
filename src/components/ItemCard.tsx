@@ -1,4 +1,5 @@
 // Item card component for search results
+import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import type { Item } from '../types';
 import { getItemIconUrl } from '../services/xivapiService';
@@ -28,7 +29,7 @@ function getRarityClass(rarity: number): string {
   }
 }
 
-export function ItemCard({ item }: ItemCardProps) {
+export const ItemCard = memo(function ItemCard({ item }: ItemCardProps) {
   const iconUrl = getItemIconUrl(item.icon);
 
   return (
@@ -100,4 +101,4 @@ export function ItemCard({ item }: ItemCardProps) {
       </div>
     </Link>
   );
-}
+});
