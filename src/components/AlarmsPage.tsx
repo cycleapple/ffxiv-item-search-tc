@@ -8,6 +8,27 @@ import { getItemById } from '../services/searchService';
 import { getItemIconUrl } from '../services/xivapiService';
 import { getGatheringPointsForItem } from '../hooks/useItemData';
 
+// Cache for zone map name by ID
+let zoneMapNameByIdCache: Record<number, string> | null = null;
+
+async function loadZoneMapNameById(): Promise<Record<number, string>> {
+  if (zoneMapNameByIdCache) return zoneMapNameByIdCache;
+  try {
+    const res = await fetch(`${import.meta.env.BASE_URL}data/zone-maps.json`);
+    const data = await res.json();
+    const maps = (data.maps || {}) as Record<string, { id: number }>;
+    zoneMapNameByIdCache = {};
+    Object.entries(maps).forEach(([name, info]) => {
+      if (info.id) {
+        zoneMapNameByIdCache![info.id] = name;
+      }
+    });
+    return zoneMapNameByIdCache;
+  } catch {
+    return {};
+  }
+}
+
 interface AlarmWithInfo {
   alarm: AlarmEntry;
   bestSpawn: SpawnInfo;
@@ -19,6 +40,7 @@ export function AlarmsPage() {
   const [newGroupName, setNewGroupName] = useState('');
   const [editingGroup, setEditingGroup] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
+  const [mapNameById, setMapNameById] = useState<Record<number, string>>({});
   const [mapModal, setMapModal] = useState<{
     isOpen: boolean;
     zoneName: string;
@@ -30,6 +52,10 @@ export function AlarmsPage() {
   useEffect(() => {
     const id = setInterval(() => setTick(t => t + 1), 1000);
     return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    loadZoneMapNameById().then(setMapNameById);
   }, []);
 
   // Compute sorted alarms with spawn info
@@ -242,7 +268,9 @@ export function AlarmsPage() {
                   {hasLocation && (
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-xs text-[var(--ffxiv-muted)]">
-                        {locPlace}
+                        {locMapId && mapNameById[locMapId] && mapNameById[locMapId] !== locPlace
+                          ? `${mapNameById[locMapId]} - ${locPlace}`
+                          : locPlace}
                       </span>
                       <span className="text-xs text-[var(--ffxiv-highlight)]">
                         X: {locX!.toFixed(1)} Y: {locY!.toFixed(1)}
