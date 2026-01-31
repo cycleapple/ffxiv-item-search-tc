@@ -150,6 +150,7 @@ function formatPrice(price: number): string {
 
 interface GatheringPointDisplay {
   placeName: string;
+  mapId?: number;
   x: number;
   y: number;
   level: number;
@@ -282,6 +283,7 @@ export function ObtainView({ itemId, sources, recipes, gatheringPoints }: Obtain
       folklore: folklore,
       gatheringPoints: points.map(p => ({
         placeName: p.placeName,
+        mapId: p.mapId,
         x: p.x,
         y: p.y,
         level: p.level,
