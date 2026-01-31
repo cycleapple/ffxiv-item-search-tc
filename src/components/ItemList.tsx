@@ -21,14 +21,6 @@ export function ItemList({
   onLoadMore,
   query,
 }: ItemListProps) {
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-10 w-10 border-3 border-[var(--ffxiv-border)] border-t-[var(--ffxiv-accent)]"></div>
-      </div>
-    );
-  }
-
   // Initial state - no search performed yet
   if (!hasSearched) {
     return (
@@ -65,6 +57,13 @@ export function ItemList({
   }
 
   if (results.length === 0) {
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-10 w-10 border-3 border-[var(--ffxiv-border)] border-t-[var(--ffxiv-accent)]"></div>
+        </div>
+      );
+    }
     return (
       <div className="text-center py-12 text-[var(--ffxiv-muted)]">
         <svg
@@ -90,8 +89,9 @@ export function ItemList({
   const displayCount = results.length;
 
   return (
-    <div className="space-y-2">
-      <div className="text-sm text-[var(--ffxiv-muted)] mb-3">
+    <div className={`space-y-2 transition-opacity duration-150 ${loading ? 'opacity-50' : ''}`}>
+      <div className="text-sm text-[var(--ffxiv-muted)] mb-3 flex items-center gap-2">
+        {loading && <div className="animate-spin rounded-full h-4 w-4 border-2 border-[var(--ffxiv-border)] border-t-[var(--ffxiv-accent)]"></div>}
         {hasMore ? (
           <>顯示 {displayCount} / {total} 個物品</>
         ) : (

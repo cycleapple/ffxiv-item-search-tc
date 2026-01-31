@@ -17,6 +17,7 @@ const CraftingSimulator = lazy(() => import('./components/crafting').then(m => (
 const PriceCheckListPage = lazy(() => import('./components/PriceCheckListPage').then(m => ({ default: m.PriceCheckListPage })));
 const AlarmsPage = lazy(() => import('./components/AlarmsPage').then(m => ({ default: m.AlarmsPage })));
 
+
 function HomePage() {
   const { categories, loading, error } = useItemData();
   const { filters, results, totalResults, isSearching, hasSearched, hasMore, updateQuery, updateFilters, resetFilters, loadMore } = useSearch();

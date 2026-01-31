@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import type { Item } from '../types';
 import { getItemIconUrl } from '../services/xivapiService';
 import { getMultilingualNames } from '../services/searchService';
+import { prefetchItemDetail } from '../prefetch';
 import { CopyButton } from './CopyButton';
 import { AddToPriceListButton } from './AddToPriceListButton';
 import { AlarmButton } from './AlarmButton';
@@ -56,6 +57,8 @@ export const ItemCard = memo(function ItemCard({ item, query }: ItemCardProps) {
     <Link
       to={`/item/${item.id}`}
       className="block bg-[var(--ffxiv-card)] border border-[var(--ffxiv-border)] rounded-lg p-3 hover:border-[var(--ffxiv-accent)] hover:bg-[var(--ffxiv-card-hover)] transition-all shadow-[var(--ffxiv-shadow-sm)]"
+      onMouseEnter={prefetchItemDetail}
+      onTouchStart={prefetchItemDetail}
     >
       <div className="flex items-start gap-3">
         {/* Icon */}

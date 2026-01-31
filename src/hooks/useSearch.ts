@@ -1,5 +1,5 @@
 // Hook for search functionality
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef, useDeferredValue } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { SearchFilters, SearchResult } from '../types';
 import { searchItems } from '../services/searchService';
@@ -125,7 +125,6 @@ function hasActiveFilters(filters: SearchFilters): boolean {
 
 export function useSearch(): UseSearchReturn {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [isSearching, setIsSearching] = useState(false);
   const [displayLimit, setDisplayLimit] = useState(PAGE_SIZE);
   const isInitialized = useRef(false);
 
@@ -160,16 +159,18 @@ export function useSearch(): UseSearchReturn {
   // Check if user has searched (has any active filter)
   const hasSearched = useMemo(() => hasActiveFilters(filters), [filters]);
 
+  // Defer filters so the UI can show a loading state while search runs
+  const deferredFilters = useDeferredValue(filters);
+  const deferredDisplayLimit = useDeferredValue(displayLimit);
+  const isStale = deferredFilters !== filters || deferredDisplayLimit !== displayLimit;
+
   // Memoized search results - only search if there are active filters
   const searchData = useMemo(() => {
-    if (!hasSearched) {
+    if (!hasActiveFilters(deferredFilters)) {
       return { results: [], total: 0 };
     }
-    setIsSearching(true);
-    const data = searchItems(filters, displayLimit);
-    setIsSearching(false);
-    return data;
-  }, [filters, hasSearched, displayLimit]);
+    return searchItems(deferredFilters, deferredDisplayLimit);
+  }, [deferredFilters, deferredDisplayLimit]);
 
   const loadMore = useCallback(() => {
     setDisplayLimit(prev => prev + PAGE_SIZE);
@@ -181,7 +182,7 @@ export function useSearch(): UseSearchReturn {
     filters,
     results: searchData.results,
     totalResults: searchData.total,
-    isSearching,
+    isSearching: isStale && hasSearched,
     hasSearched,
     hasMore,
     updateQuery,
