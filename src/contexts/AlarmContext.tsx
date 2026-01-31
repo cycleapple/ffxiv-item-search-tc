@@ -7,6 +7,10 @@ export interface AlarmEntry {
   spawns: number[];
   duration: number;
   groupId: string;
+  placeName?: string;
+  mapId?: number;
+  x?: number;
+  y?: number;
 }
 
 export interface AlarmGroup {

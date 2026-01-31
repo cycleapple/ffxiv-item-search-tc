@@ -408,6 +408,10 @@ export function GatheringView({ points }: GatheringViewProps) {
                                 pointId={point.id}
                                 spawns={point.spawns}
                                 duration={point.duration}
+                                placeName={point.placeName}
+                                mapId={point.mapId}
+                                x={point.x}
+                                y={point.y}
                               />
                             )}
                           </div>

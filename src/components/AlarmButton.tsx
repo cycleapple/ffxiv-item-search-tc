@@ -6,9 +6,13 @@ interface AlarmButtonProps {
   pointId: number;
   spawns: number[];
   duration: number;
+  placeName?: string;
+  mapId?: number;
+  x?: number;
+  y?: number;
 }
 
-export function AlarmButton({ itemId, pointId, spawns, duration }: AlarmButtonProps) {
+export function AlarmButton({ itemId, pointId, spawns, duration, placeName, mapId, x, y }: AlarmButtonProps) {
   const { addAlarm, removeAlarm, isAlarmSet, groups } = useAlarms();
   const active = isAlarmSet(itemId, pointId);
   const [showPicker, setShowPicker] = useState(false);
@@ -34,12 +38,12 @@ export function AlarmButton({ itemId, pointId, spawns, duration }: AlarmButtonPr
     } else if (groups.length > 1) {
       setShowPicker(true);
     } else {
-      addAlarm({ itemId, pointId, spawns, duration });
+      addAlarm({ itemId, pointId, spawns, duration, placeName, mapId, x, y });
     }
   };
 
   const handlePickGroup = (groupId: string) => {
-    addAlarm({ itemId, pointId, spawns, duration }, groupId);
+    addAlarm({ itemId, pointId, spawns, duration, placeName, mapId, x, y }, groupId);
     setShowPicker(false);
   };
 

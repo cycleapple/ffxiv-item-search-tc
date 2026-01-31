@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAlarms, type AlarmEntry } from '../contexts/AlarmContext';
 import { EorzeanClock } from './EorzeanClock';
+import { MapModal } from './MapModal';
 import { getNextSpawnInfo, formatCountdown, type SpawnInfo } from '../utils/eorzeanClock';
 import { getItemById } from '../services/searchService';
 import { getItemIconUrl } from '../services/xivapiService';
@@ -17,6 +18,12 @@ export function AlarmsPage() {
   const [newGroupName, setNewGroupName] = useState('');
   const [editingGroup, setEditingGroup] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
+  const [mapModal, setMapModal] = useState<{
+    isOpen: boolean;
+    zoneName: string;
+    x: number;
+    y: number;
+  }>({ isOpen: false, zoneName: '', x: 0, y: 0 });
 
   useEffect(() => {
     const id = setInterval(() => setTick(t => t + 1), 1000);
@@ -77,7 +84,6 @@ export function AlarmsPage() {
               key={group.id}
               className="flex items-center gap-3 px-3 py-2 bg-[var(--ffxiv-card)] rounded border border-[var(--ffxiv-border)]"
             >
-              {/* Enable/disable toggle */}
               <button
                 onClick={() => toggleGroup(group.id)}
                 className="flex-shrink-0"
@@ -94,8 +100,6 @@ export function AlarmsPage() {
                   </svg>
                 )}
               </button>
-
-              {/* Name (editable) */}
               {editingGroup === group.id ? (
                 <input
                   className="flex-1 bg-transparent border-b border-[var(--ffxiv-accent)] text-sm outline-none"
@@ -108,13 +112,9 @@ export function AlarmsPage() {
               ) : (
                 <span className="flex-1 text-sm">{group.name}</span>
               )}
-
-              {/* Alarm count */}
               <span className="text-xs text-[var(--ffxiv-muted)]">
                 {alarms.filter(a => a.groupId === group.id).length} 個鬧鐘
               </span>
-
-              {/* Rename button */}
               {editingGroup !== group.id && (
                 <button
                   onClick={() => startRename(group.id, group.name)}
@@ -126,8 +126,6 @@ export function AlarmsPage() {
                   </svg>
                 </button>
               )}
-
-              {/* Delete button */}
               {group.id !== 'default' && (
                 <button
                   onClick={() => deleteGroup(group.id)}
@@ -142,7 +140,6 @@ export function AlarmsPage() {
             </div>
           ))}
         </div>
-        {/* New group input */}
         <div className="flex gap-2">
           <input
             className="px-2 py-1 text-sm bg-[var(--ffxiv-bg)] border border-[var(--ffxiv-border)] rounded outline-none focus:border-[var(--ffxiv-accent)]"
@@ -173,6 +170,7 @@ export function AlarmsPage() {
             const item = getItemById(alarm.itemId);
             const group = groups.find(g => g.id === alarm.groupId);
             const muted = !group?.enabled;
+            const hasLocation = alarm.placeName && alarm.x && alarm.y;
 
             return (
               <div
@@ -208,11 +206,10 @@ export function AlarmsPage() {
                       <span className="font-medium">物品 #{alarm.itemId}</span>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 mt-0.5">
+                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                     <span className="text-xs text-[var(--ffxiv-muted)]">
                       ET {alarm.spawns.map(h => `${String(h).padStart(2, '0')}:00`).join(' / ')}
                     </span>
-                    {/* Group selector */}
                     <select
                       value={alarm.groupId}
                       onChange={e => moveAlarm(alarm.itemId, alarm.pointId, e.target.value)}
@@ -223,6 +220,32 @@ export function AlarmsPage() {
                       ))}
                     </select>
                   </div>
+                  {/* Location info */}
+                  {hasLocation && (
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs text-[var(--ffxiv-muted)]">
+                        {alarm.placeName}
+                      </span>
+                      <span className="text-xs text-[var(--ffxiv-highlight)]">
+                        X: {alarm.x!.toFixed(1)} Y: {alarm.y!.toFixed(1)}
+                      </span>
+                      <button
+                        onClick={() => setMapModal({
+                          isOpen: true,
+                          zoneName: alarm.placeName!,
+                          x: alarm.x!,
+                          y: alarm.y!,
+                        })}
+                        className="flex items-center gap-1 px-2 py-0.5 text-xs bg-[var(--ffxiv-accent)] hover:bg-[var(--ffxiv-accent-hover)] rounded transition-colors"
+                        title="顯示地圖"
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                        </svg>
+                        地圖
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Countdown */}
@@ -265,6 +288,15 @@ export function AlarmsPage() {
           })}
         </div>
       )}
+
+      {/* Map modal */}
+      <MapModal
+        isOpen={mapModal.isOpen}
+        onClose={() => setMapModal({ ...mapModal, isOpen: false })}
+        zoneName={mapModal.zoneName}
+        x={mapModal.x}
+        y={mapModal.y}
+      />
     </div>
   );
 }
