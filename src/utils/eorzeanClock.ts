@@ -92,6 +92,14 @@ export function getNextSpawnInfo(spawns: number[], duration: number): SpawnInfo[
   });
 }
 
+/** Get the smallest countdown across all spawn windows (real seconds). Returns 0 if active. */
+export function getMinCountdown(spawns: number[], duration: number): number {
+  const infos = getNextSpawnInfo(spawns, duration);
+  if (infos.length === 0) return Infinity;
+  if (infos.some(i => i.active)) return 0;
+  return Math.min(...infos.map(i => i.countdown));
+}
+
 /** Format seconds into H:MM:SS */
 export function formatCountdown(totalSeconds: number): string {
   const h = Math.floor(totalSeconds / 3600);

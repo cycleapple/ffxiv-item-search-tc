@@ -11,6 +11,9 @@ import { PriceCheckListPage } from './components/PriceCheckListPage';
 import { useItemData } from './hooks/useItemData';
 import { useSearch } from './hooks/useSearch';
 import { PriceCheckListProvider, usePriceCheckList } from './contexts/PriceCheckListContext';
+import { AlarmProvider, useAlarms } from './contexts/AlarmContext';
+import { EorzeanClock } from './components/EorzeanClock';
+import { AlarmsPage } from './components/AlarmsPage';
 
 function HomePage() {
   const { categories, loading, error } = useItemData();
@@ -62,6 +65,7 @@ function HomePage() {
 // Header component that uses the price list context
 function Header({ onSettingsOpen }: { onSettingsOpen: () => void }) {
   const { itemCount } = usePriceCheckList();
+  const { alarmCount } = useAlarms();
 
   return (
     <header className="bg-[var(--ffxiv-bg-secondary)] border-b border-[var(--ffxiv-border)] sticky top-0 z-10">
@@ -95,6 +99,21 @@ function Header({ onSettingsOpen }: { onSettingsOpen: () => void }) {
             >
               支持作者
             </a>
+            <EorzeanClock />
+            <Link
+              to="/alarms"
+              className="relative p-2 text-[var(--ffxiv-muted)] hover:text-[var(--ffxiv-accent)] hover:bg-[var(--ffxiv-accent)]/10 rounded transition-colors"
+              title="採集鬧鐘"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+              </svg>
+              {alarmCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-yellow-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
+                  {alarmCount > 99 ? '99+' : alarmCount}
+                </span>
+              )}
+            </Link>
             <Link
               to="/pricelist"
               className="relative p-2 text-[var(--ffxiv-muted)] hover:text-[var(--ffxiv-accent)] hover:bg-[var(--ffxiv-accent)]/10 rounded transition-colors"
@@ -151,6 +170,7 @@ function AppContent() {
             <Route path="/item/:id" element={<ItemDetail />} />
             <Route path="/craft/:itemId" element={<CraftingSimulator />} />
             <Route path="/pricelist" element={<PriceCheckListPage />} />
+            <Route path="/alarms" element={<AlarmsPage />} />
           </Routes>
         )}
       </main>
@@ -208,9 +228,11 @@ function AppContent() {
 function App() {
   return (
     <BrowserRouter basename="/ffxiv-item-search-tc">
-      <PriceCheckListProvider>
-        <AppContent />
-      </PriceCheckListProvider>
+      <AlarmProvider>
+        <PriceCheckListProvider>
+          <AppContent />
+        </PriceCheckListProvider>
+      </AlarmProvider>
     </BrowserRouter>
   );
 }

@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import { CopyButton } from './CopyButton';
 import { MapModal } from './MapModal';
 import GatheringTimer from './GatheringTimer';
+import { AlarmButton } from './AlarmButton';
 
 // Cache for zone map name by ID
 let zoneMapNameByIdCache: Record<number, string> | null = null;
@@ -150,6 +151,8 @@ function formatPrice(price: number): string {
 }
 
 interface GatheringPointDisplay {
+  id: number;
+  itemId: number;
   placeName: string;
   mapId?: number;
   x: number;
@@ -285,6 +288,8 @@ export function ObtainView({ itemId, sources, recipes, gatheringPoints }: Obtain
       detail: levelText,
       folklore: folklore,
       gatheringPoints: points.map(p => ({
+        id: p.id,
+        itemId: p.itemId,
         placeName: p.placeName,
         mapId: p.mapId,
         x: p.x,
@@ -718,7 +723,17 @@ export function ObtainView({ itemId, sources, recipes, gatheringPoints }: Obtain
                         </div>
                       ) : null}
                       {point.spawns && point.spawns.length > 0 && point.duration && (
-                        <GatheringTimer spawns={point.spawns} duration={point.duration} />
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1">
+                            <GatheringTimer spawns={point.spawns} duration={point.duration} />
+                          </div>
+                          <AlarmButton
+                            itemId={point.itemId}
+                            pointId={point.id}
+                            spawns={point.spawns}
+                            duration={point.duration}
+                          />
+                        </div>
                       )}
                     </div>
                   );

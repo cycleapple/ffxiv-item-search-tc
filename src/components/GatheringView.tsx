@@ -6,6 +6,7 @@ import { getItemById } from '../services/searchService';
 import { getItemIconUrl } from '../services/xivapiService';
 import { CopyButton } from './CopyButton';
 import GatheringTimer from './GatheringTimer';
+import { AlarmButton } from './AlarmButton';
 
 interface GatheringViewProps {
   points: GatheringPoint[];
@@ -401,6 +402,14 @@ export function GatheringView({ points }: GatheringViewProps) {
                             <span className="text-[var(--ffxiv-muted)]">
                               {spawnWindows.join(' / ')}
                             </span>
+                            {point.spawns && point.spawns.length > 0 && point.duration && (
+                              <AlarmButton
+                                itemId={point.itemId}
+                                pointId={point.id}
+                                spawns={point.spawns}
+                                duration={point.duration}
+                              />
+                            )}
                           </div>
                         )}
 
