@@ -7,6 +7,7 @@ interface ItemData {
   items: Record<number, Item>;
   categories: ItemCategory[];
   loading: boolean;
+  loadingStatus: string;
   error: string | null;
 }
 
@@ -36,6 +37,7 @@ let globalItemData: ItemData = {
   items: {},
   categories: [],
   loading: true,
+  loadingStatus: '正在連線...',
   error: null,
 };
 
@@ -80,29 +82,51 @@ let dataLoaded = false;
 let loadingPromise: Promise<void> | null = null;
 let secondaryLoadingPromise: Promise<void> | null = null;
 const secondaryListeners: Array<() => void> = [];
+const statusListeners: Array<(status: string) => void> = [];
+
+function updateLoadingStatus(status: string) {
+  globalItemData.loadingStatus = status;
+  statusListeners.forEach(fn => fn(status));
+}
 
 function notifySecondaryListeners() {
   secondaryListeners.forEach(fn => fn());
 }
 
 // Compact index field order (must match build-data.js output)
-const INDEX_FIELDS = ['id','name','icon','itemLevel','equipLevel','rarity','categoryId','categoryName','canBeHq','stackSize','isUntradable','isCraftable','isGatherable','patch'] as const;
 const BOOL_FIELDS = new Set(['canBeHq','isUntradable','isCraftable','isGatherable']);
+const MULTI_NAME_FIELDS = new Set(['en','ja','cn']);
 
-function decodeIndexItems(indexData: { fields: string[]; items: (string | number)[][]; categories: ItemCategory[] }): Record<number, Item> {
+interface IndexData {
+  fields: string[];
+  items: (string | number)[][];
+  categories: ItemCategory[];
+}
+
+function decodeIndexItems(indexData: IndexData): { items: Record<number, Item>; multiNames: Record<string, { en?: string; ja?: string; cn?: string }> } {
   const fields = indexData.fields;
   const items: Record<number, Item> = {};
+  const multiNames: Record<string, { en?: string; ja?: string; cn?: string }> = {};
+
   for (const row of indexData.items) {
     const obj: Record<string, unknown> = {};
+    const mn: Record<string, string> = {};
     for (let i = 0; i < fields.length; i++) {
       const f = fields[i];
-      obj[f] = BOOL_FIELDS.has(f) ? (row[i] === 1) : row[i];
+      if (MULTI_NAME_FIELDS.has(f)) {
+        if (row[i]) mn[f] = row[i] as string;
+      } else {
+        obj[f] = BOOL_FIELDS.has(f) ? (row[i] === 1) : row[i];
+      }
     }
-    // Fields not in index default to empty
     obj.description = '';
-    items[obj.id as number] = obj as unknown as Item;
+    const id = obj.id as number;
+    items[id] = obj as unknown as Item;
+    if (Object.keys(mn).length > 0) {
+      multiNames[id] = mn as { en?: string; ja?: string; cn?: string };
+    }
   }
-  return items;
+  return { items, multiNames };
 }
 
 // Full item data cache (loaded lazily for detail pages)
@@ -141,33 +165,30 @@ async function loadAllData(): Promise<void> {
 
   loadingPromise = (async () => {
     try {
-      // Phase 1: Load compact index (~2MB) + multilingual names for search
-      const [indexResponse, multiNamesResponse] = await Promise.all([
-        fetch(`${import.meta.env.BASE_URL}data/items-index.json`),
-        fetch(`${import.meta.env.BASE_URL}data/item-names-multi.json`),
-      ]);
-
+      // Phase 1: Single fetch of compact index (~4.4MB, ~1.4MB gzipped)
+      updateLoadingStatus('正在下載物品資料...');
+      const indexResponse = await fetch(`${import.meta.env.BASE_URL}data/items-index.json`);
       if (!indexResponse.ok) throw new Error('Failed to load items index');
 
+      updateLoadingStatus('正在解析物品資料...');
       const indexData = await indexResponse.json();
+      const { items, multiNames } = decodeIndexItems(indexData);
       globalItemData = {
-        items: decodeIndexItems(indexData),
+        items,
         categories: indexData.categories || [],
         loading: false,
+        loadingStatus: '',
         error: null,
       };
 
-      if (multiNamesResponse.ok) {
-        const multiNamesData = await multiNamesResponse.json();
-        setMultilingualNames(multiNamesData);
-      }
-
+      setMultilingualNames(multiNames);
+      updateLoadingStatus('正在建立搜尋索引...');
       initializeSearchIndex(globalItemData.items);
       dataLoaded = true;
 
       // Phase 2: Load secondary data + full items in background
       secondaryLoadingPromise = loadSecondaryData();
-      loadFullItems(); // pre-warm full item data
+      loadFullItems();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       globalItemData.error = errorMessage;
@@ -246,30 +267,33 @@ async function loadSecondaryData(): Promise<void> {
  * Hook to access item data
  */
 export function useItemData(): ItemData {
-  // If data is already loaded, return it directly without causing re-renders
   const [state, setState] = useState<ItemData>(() =>
     dataLoaded ? globalItemData : { ...globalItemData }
   );
 
   useEffect(() => {
-    // Skip if data already loaded
     if (dataLoaded) {
-      // Only update if state doesn't match (e.g., initial render had stale data)
       if (state.loading !== globalItemData.loading) {
         setState(globalItemData);
       }
       return;
     }
 
-    if (!loadingPromise) {
-      loadAllData().then(() => {
-        setState({ ...globalItemData });
-      });
-    } else {
-      loadingPromise.then(() => {
-        setState({ ...globalItemData });
-      });
-    }
+    // Subscribe to loading status updates for progress display
+    const onStatus = (status: string) => {
+      setState(prev => prev.loading ? { ...prev, loadingStatus: status } : prev);
+    };
+    statusListeners.push(onStatus);
+
+    const promise = loadingPromise || loadAllData();
+    promise.then(() => {
+      setState({ ...globalItemData });
+    });
+
+    return () => {
+      const idx = statusListeners.indexOf(onStatus);
+      if (idx >= 0) statusListeners.splice(idx, 1);
+    };
   }, []);
 
   return state;

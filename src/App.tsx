@@ -149,7 +149,7 @@ function Header({ onSettingsOpen }: { onSettingsOpen: () => void }) {
 
 function AppContent() {
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const { loading } = useItemData();
+  const { loading, loadingStatus } = useItemData();
 
   return (
     <div className="min-h-screen bg-[var(--ffxiv-bg)] flex flex-col">
@@ -164,7 +164,7 @@ function AppContent() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-12">
             <div className="animate-spin rounded-full h-10 w-10 border-3 border-[var(--ffxiv-border)] border-t-[var(--ffxiv-accent)] mb-4"></div>
-            <div className="text-[var(--ffxiv-muted)]">載入物品資料中...</div>
+            <div className="text-[var(--ffxiv-muted)]">{loadingStatus || '載入物品資料中...'}</div>
           </div>
         ) : (
           <Suspense fallback={

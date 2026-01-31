@@ -142,6 +142,11 @@ const __dirname = dirname(__filename);
 const DATA_REPO_PATH = process.env.DATA_REPO_PATH || join(__dirname, '..', '..', 'ffxiv-datamining-tc');
 const OUTPUT_PATH = join(__dirname, '..', 'public', 'data');
 
+// Temporary storage for items-index (populated by processItems, finalized after processMultilingualNames)
+let globalIndexFields = [];
+let globalIndexItems = [];
+let globalIndexCategories = [];
+
 // Ensure output directory exists
 if (!existsSync(OUTPUT_PATH)) {
   mkdirSync(OUTPUT_PATH, { recursive: true });
@@ -515,8 +520,10 @@ async function processItems() {
 
   writeFileSync(join(OUTPUT_PATH, 'items.json'), JSON.stringify(output));
 
-  // Generate compact items-index.json for fast initial load (~2MB vs ~24MB)
+  // Generate compact items-index.json for fast initial load
+  // Includes multilingual names so only one fetch is needed
   // Format: { categories, fields: [...fieldNames], items: [[val,val,...], ...] }
+  // Note: en/ja/cn fields are populated later by finalizeItemsIndex() after processMultilingualNames()
   const indexFields = ['id','name','icon','itemLevel','equipLevel','rarity','categoryId','categoryName','canBeHq','stackSize','isUntradable','isCraftable','isGatherable','patch'];
   const indexItems = Object.values(itemsOutput).map(item =>
     indexFields.map(f => {
@@ -526,11 +533,13 @@ async function processItems() {
       return v;
     })
   );
-  const indexOutput = { categories: usedCategories, fields: indexFields, items: indexItems };
-  writeFileSync(join(OUTPUT_PATH, 'items-index.json'), JSON.stringify(indexOutput));
+  // Store temporarily; will be finalized with multi-names later
+  globalIndexFields = indexFields;
+  globalIndexItems = indexItems;
+  globalIndexCategories = usedCategories;
 
+  writeFileSync(join(OUTPUT_PATH, 'items.json'), JSON.stringify(output));
   console.log(`Processed ${count} items (${equipCount} with equipment stats, ${foodCount} with food effects), ${usedCategories.length} categories`);
-  console.log(`Generated items-index.json: ${(JSON.stringify(indexOutput).length / 1024 / 1024).toFixed(1)}MB (compact) vs ${(JSON.stringify(output).length / 1024 / 1024).toFixed(1)}MB (full)`);
 }
 
 /**
@@ -2080,6 +2089,20 @@ async function main() {
     await processQuestCNNames();
     await processInstanceCNNames();
     await processMultilingualNames();
+    // Finalize items-index.json with merged multilingual names
+    {
+      const multiPath = join(OUTPUT_PATH, 'item-names-multi.json');
+      const multi = existsSync(multiPath) ? JSON.parse(readFileSync(multiPath, 'utf8')) : {};
+      const mergedFields = [...globalIndexFields, 'en', 'ja', 'cn'];
+      const mergedItems = globalIndexItems.map(row => {
+        const id = row[0];
+        const m = multi[id] || {};
+        return [...row, m.en || '', m.ja || '', m.cn || ''];
+      });
+      const indexOutput = { categories: globalIndexCategories, fields: mergedFields, items: mergedItems };
+      writeFileSync(join(OUTPUT_PATH, 'items-index.json'), JSON.stringify(indexOutput));
+      console.log(`Generated items-index.json: ${(JSON.stringify(indexOutput).length / 1024 / 1024).toFixed(1)}MB (compact, with multilingual names)`);
+    }
     await processRecipeLevels();
     console.log('');
     console.log('Data processing complete!');

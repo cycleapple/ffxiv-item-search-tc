@@ -16,48 +16,59 @@ interface MultilingualNames {
 let itemIndex: any = null;
 let itemsMap: Map<number, Item> = new Map();
 let multilingualNames: MultilingualNames = {};
+let indexReady = false;
 
 /**
  * Set multilingual names data for search
  */
 export function setMultilingualNames(names: MultilingualNames): void {
   multilingualNames = names;
-  console.log(`Loaded ${Object.keys(names).length} multilingual name entries`);
 }
 
 /**
- * Initialize the search index with items data
+ * Initialize the search index with items data.
+ * Populates itemsMap immediately, defers FlexSearch indexing to background.
  */
 export function initializeSearchIndex(items: Record<number, Item>): void {
-  // Create FlexSearch index optimized for Chinese text
-  // Use 'full' tokenization to allow matching any substring (important for Chinese)
-  itemIndex = new FlexSearch.Index({
+  itemsMap = new Map(
+    Object.entries(items).map(([id, item]) => [parseInt(id), item as Item])
+  );
+
+  console.log(`Items map ready with ${itemsMap.size} items, building FlexSearch index in background...`);
+
+  // Build FlexSearch index asynchronously in small batches to avoid blocking UI
+  buildIndexAsync();
+}
+
+async function buildIndexAsync(): Promise<void> {
+  const index = new FlexSearch.Index({
     tokenize: 'full',
     resolution: 9,
     cache: true,
   });
 
-  itemsMap = new Map(
-    Object.entries(items).map(([id, item]) => [parseInt(id), item as Item])
-  );
+  const entries = Array.from(itemsMap.entries());
+  const BATCH_SIZE = 2000;
 
-  // Add items to index - include all language names for search
-  for (const [id, item] of itemsMap) {
-    // Build search text with all available names
-    const searchParts = [item.name, item.description || ''];
-
-    // Add multilingual names if available
-    const multiNames = multilingualNames[id];
-    if (multiNames) {
-      if (multiNames.en) searchParts.push(multiNames.en);
-      if (multiNames.ja) searchParts.push(multiNames.ja);
-      if (multiNames.cn) searchParts.push(multiNames.cn);
+  for (let i = 0; i < entries.length; i += BATCH_SIZE) {
+    const batch = entries.slice(i, i + BATCH_SIZE);
+    for (const [id, item] of batch) {
+      const searchParts = [item.name];
+      const multiNames = multilingualNames[id];
+      if (multiNames) {
+        if (multiNames.en) searchParts.push(multiNames.en);
+        if (multiNames.ja) searchParts.push(multiNames.ja);
+        if (multiNames.cn) searchParts.push(multiNames.cn);
+      }
+      index.add(id, searchParts.join(' '));
     }
-
-    itemIndex.add(id, searchParts.join(' '));
+    // Yield to main thread between batches
+    await new Promise(resolve => setTimeout(resolve, 0));
   }
 
-  console.log(`Search index initialized with ${itemsMap.size} items`);
+  itemIndex = index;
+  indexReady = true;
+  console.log(`FlexSearch index ready with ${entries.length} items`);
 }
 
 /**
@@ -72,7 +83,7 @@ export interface SearchResultWithTotal {
  * Search for items matching the query and filters
  */
 export function searchItems(filters: SearchFilters, limit = 100): SearchResultWithTotal {
-  if (!itemIndex || itemsMap.size === 0) {
+  if (itemsMap.size === 0) {
     console.warn('Search index not initialized');
     return { results: [], total: 0 };
   }
@@ -83,22 +94,25 @@ export function searchItems(filters: SearchFilters, limit = 100): SearchResultWi
     // Normalize query for better Unicode matching (handles different input methods)
     const query = filters.query.trim().toLowerCase().normalize('NFC');
 
-    // Search by query using FlexSearch
-    const searchResults = itemIndex.search(filters.query, { limit: 5000 }) as number[];
-    const flexSearchIds = new Set(searchResults);
-
-    results = searchResults
-      .map((id: number) => itemsMap.get(id))
-      .filter((item): item is Item => item !== undefined);
+    // Use FlexSearch if index is ready, otherwise skip to substring search
+    const flexSearchIds = new Set<number>();
+    if (indexReady && itemIndex) {
+      const searchResults = itemIndex.search(filters.query, { limit: 5000 }) as number[];
+      for (const id of searchResults) flexSearchIds.add(id);
+      results = searchResults
+        .map((id: number) => itemsMap.get(id))
+        .filter((item): item is Item => item !== undefined);
+    } else {
+      results = [];
+    }
 
     // Also do substring search across all names (TC, EN, JA, CN) for better CJK support
     // This catches cases where FlexSearch tokenization doesn't match partial strings
     for (const [id, item] of itemsMap) {
       if (flexSearchIds.has(id)) continue; // Already in results
 
-      // Check TC name and description (normalize for Unicode compatibility)
-      if (item.name.toLowerCase().normalize('NFC').includes(query) ||
-          (item.description && item.description.toLowerCase().normalize('NFC').includes(query))) {
+      // Check TC name
+      if (item.name.toLowerCase().normalize('NFC').includes(query)) {
         results.push(item);
         continue;
       }
@@ -112,17 +126,6 @@ export function searchItems(filters: SearchFilters, limit = 100): SearchResultWi
 
         if (enMatch || jaMatch || cnMatch) {
           results.push(item);
-        }
-
-        // Debug logging for item 36374 (orchestrion roll)
-        if (id === 36374 || item.name.includes('昏暗')) {
-          console.log('Debug search for item', id, item.name);
-          console.log('  Query:', query, 'hex:', Array.from(query).map(c => c.charCodeAt(0).toString(16)).join(' '));
-          console.log('  JA name:', multiNames.ja);
-          if (multiNames.ja) {
-            console.log('  JA hex:', Array.from(multiNames.ja).map(c => c.charCodeAt(0).toString(16)).join(' '));
-            console.log('  JA match:', jaMatch);
-          }
         }
       }
     }
