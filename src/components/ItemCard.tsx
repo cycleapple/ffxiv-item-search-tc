@@ -4,6 +4,8 @@ import type { Item } from '../types';
 import { getItemIconUrl } from '../services/xivapiService';
 import { CopyButton } from './CopyButton';
 import { AddToPriceListButton } from './AddToPriceListButton';
+import { AlarmButton } from './AlarmButton';
+import { getGatheringPointsForItem } from '../hooks/useItemData';
 
 interface ItemCardProps {
   item: Item;
@@ -75,6 +77,24 @@ export function ItemCard({ item }: ItemCardProps) {
             {!item.isUntradable && (
               <AddToPriceListButton itemId={item.id} variant="small" />
             )}
+            {item.isGatherable && (() => {
+              const timedPoints = getGatheringPointsForItem(item.id)
+                .filter(p => p.spawns && p.spawns.length > 0 && p.duration);
+              if (timedPoints.length === 0) return null;
+              return timedPoints.map(p => (
+                <AlarmButton
+                  key={p.id}
+                  itemId={p.itemId}
+                  pointId={p.id}
+                  spawns={p.spawns!}
+                  duration={p.duration!}
+                  placeName={p.placeName}
+                  mapId={p.mapId}
+                  x={p.x}
+                  y={p.y}
+                />
+              ));
+            })()}
           </div>
         </div>
       </div>
