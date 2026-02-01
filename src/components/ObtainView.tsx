@@ -6,6 +6,7 @@ import { getItemIconUrl } from '../services/xivapiService';
 import { Link } from 'react-router-dom';
 import { CopyButton } from './CopyButton';
 import { MapModal } from './MapModal';
+import { MobDropView } from './MobDropView';
 import GatheringTimer from './GatheringTimer';
 import { AlarmButton } from './AlarmButton';
 
@@ -173,6 +174,7 @@ interface SourceDisplay {
   title: string;
   subtitle?: string;
   detail?: string;
+  mobIds?: number[];
   mobNames?: string[];
   totalMobs?: number;
   instanceNames?: string[];
@@ -313,8 +315,9 @@ export function ObtainView({ itemId, sources, recipes, gatheringPoints }: Obtain
       // Mob drop source
       allSources.push({
         type: source.type,
-        iconEmoji: '👹',
+        iconUrl: 'https://xivapi.com/i/061000/061819.png',
         title: source.typeName,
+        mobIds: source.mobIds,
         mobNames: source.mobNames,
         totalMobs: source.totalMobs,
       });
@@ -581,24 +584,14 @@ export function ObtainView({ itemId, sources, recipes, gatheringPoints }: Obtain
                 </span>
               </div>
             )}
-            {/* Mob names for drop sources */}
-            {source.mobNames && source.mobNames.length > 0 && (
-              <div className="text-sm text-[var(--ffxiv-muted)] mt-1">
-                <div className="flex flex-wrap gap-1">
-                  {source.mobNames.map((name, i) => (
-                    <span
-                      key={i}
-                      className="px-2 py-0.5 bg-[var(--ffxiv-card)] rounded text-xs"
-                    >
-                      {name}
-                    </span>
-                  ))}
-                  {source.totalMobs && source.totalMobs > 5 && (
-                    <span className="px-2 py-0.5 text-xs text-[var(--ffxiv-muted)]">
-                      ...還有 {source.totalMobs - 5} 個怪物
-                    </span>
-                  )}
-                </div>
+            {/* Mob drop map view */}
+            {source.mobIds && source.mobIds.length > 0 && source.mobNames && (
+              <div className="mt-2">
+                <MobDropView
+                  mobIds={source.mobIds}
+                  mobNames={source.mobNames}
+                  totalMobs={source.totalMobs || source.mobIds.length}
+                />
               </div>
             )}
             {/* Instance names for dungeon/raid sources */}

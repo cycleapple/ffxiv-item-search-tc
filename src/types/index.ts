@@ -308,6 +308,27 @@ export interface SourcesData {
   sources: Record<number, ItemSource[]>; // keyed by itemId
 }
 
+// Mob position data for monster drop maps
+export interface MobPositionEntry {
+  x: number;
+  y: number;
+  level: number;
+}
+
+export interface MobMapGroup {
+  mapId: number;
+  zoneName: string;
+  mapPath: string;
+  sizeFactor: number;
+  positions: MobPositionEntry[];
+}
+
+export interface MobPositionData {
+  [bnpcNameId: string]: {
+    positions: MobMapGroup[];
+  };
+}
+
 // Simplified listing info for tooltip display
 export interface ListingInfo {
   price: number;

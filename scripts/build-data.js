@@ -2063,6 +2063,136 @@ async function processRecipeLevels() {
 }
 
 /**
+ * Process mob positions for monster drop maps
+ * Creates mob-positions.json keyed by BNpcName ID
+ */
+async function processMobPositions() {
+  console.log('Processing mob positions...');
+
+  // Fetch required data
+  const TEAMCRAFT_MONSTERS = 'https://raw.githubusercontent.com/ffxiv-teamcraft/ffxiv-teamcraft/staging/libs/data/src/lib/json/monsters.json';
+  const [monsters, dropSources, tcMaps, tcPlaces] = await Promise.all([
+    fetchJSON(TEAMCRAFT_MONSTERS),
+    fetchJSON(TEAMCRAFT_DROP_SOURCES),
+    fetchJSON(TEAMCRAFT_MAPS),
+    fetchJSON(TEAMCRAFT_PLACES),
+  ]);
+
+  if (!monsters || !dropSources || !tcMaps) {
+    console.warn('Missing data for mob positions, skipping');
+    return;
+  }
+
+  // Load TC place names
+  const placeNames = await parseCSV(join(DATA_REPO_PATH, 'csv', 'PlaceName.csv'));
+  const placeNameMap = new Map();
+  placeNames.forEach((pn) => {
+    const id = parseInt(pn['#'] || pn.key || '0');
+    const name = pn['Name'] || '';
+    if (id > 0 && name) {
+      placeNameMap.set(id, name);
+    }
+  });
+
+  // Collect all mob IDs referenced in drop-sources
+  const referencedMobs = new Set();
+  for (const mobIds of Object.values(dropSources)) {
+    for (const mobId of mobIds) {
+      referencedMobs.add(mobId);
+    }
+  }
+  console.log(`Found ${referencedMobs.size} unique mobs referenced in drop sources`);
+
+  // Build mob positions data
+  const mobPositions = {};
+  let totalPositions = 0;
+  const MAX_POSITIONS_PER_MAP = 20;
+
+  for (const mobIdStr of referencedMobs) {
+    const mobId = String(mobIdStr);
+    const monster = monsters[mobId];
+    if (!monster || !monster.positions || monster.positions.length === 0) continue;
+
+    // Group positions by map
+    const byMap = new Map(); // mapId -> positions[]
+    for (const pos of monster.positions) {
+      if (!pos.map || pos.x === undefined || pos.y === undefined) continue;
+      // Skip fate-only mobs
+      if (pos.fate) continue;
+
+      const mapId = pos.map;
+      if (!byMap.has(mapId)) {
+        byMap.set(mapId, []);
+      }
+      byMap.get(mapId).push(pos);
+    }
+
+    if (byMap.size === 0) continue;
+
+    const mapGroups = [];
+
+    for (const [mapId, positions] of byMap) {
+      const mapInfo = tcMaps[mapId];
+      if (!mapInfo) continue;
+
+      // Get zone name
+      const placeNameId = mapInfo.placename_id || 0;
+      let zoneName = placeNameMap.get(placeNameId) || '';
+      if (!zoneName && placeNameId && tcPlaces && tcPlaces[placeNameId]) {
+        const place = tcPlaces[placeNameId];
+        zoneName = place.zh || place.ja || place.en || '';
+      }
+      if (!zoneName) continue;
+
+      // Get map path and sizeFactor
+      // mapInfo.image is a full URL like "https://xivapi.com/m/e3f1/e3f1.00.jpg"
+      // Extract just the path portion: "e3f1/e3f1.00"
+      const rawImage = mapInfo.image || '';
+      const imageMatch = rawImage.match(/\/m\/(.+)\.jpg$/);
+      const mapPath = imageMatch ? imageMatch[1] : '';
+      const sizeFactor = mapInfo.size_factor || 100;
+      if (!mapPath) continue;
+
+      // Deduplicate positions close together (within ~1 game coord)
+      const dedupedPositions = [];
+      for (const pos of positions) {
+        const isDuplicate = dedupedPositions.some(
+          (existing) => Math.abs(existing.x - pos.x) < 1 && Math.abs(existing.y - pos.y) < 1
+        );
+        if (!isDuplicate) {
+          dedupedPositions.push(pos);
+        }
+      }
+
+      // Limit positions per map
+      const limitedPositions = dedupedPositions.slice(0, MAX_POSITIONS_PER_MAP);
+
+      mapGroups.push({
+        mapId,
+        zoneName,
+        mapPath,
+        sizeFactor,
+        positions: limitedPositions.map((p) => ({
+          x: parseFloat(p.x.toFixed(1)),
+          y: parseFloat(p.y.toFixed(1)),
+          level: p.level || 0,
+        })),
+      });
+
+      totalPositions += limitedPositions.length;
+    }
+
+    if (mapGroups.length > 0) {
+      mobPositions[mobId] = { positions: mapGroups };
+    }
+  }
+
+  writeFileSync(join(OUTPUT_PATH, 'mob-positions.json'), JSON.stringify(mobPositions));
+  const fileSizeMB = (JSON.stringify(mobPositions).length / 1024 / 1024).toFixed(1);
+  console.log(`Processed ${Object.keys(mobPositions).length} mobs with ${totalPositions} positions (${fileSizeMB}MB)`);
+}
+
+/**
  * Main function
  */
 async function main() {
@@ -2089,6 +2219,7 @@ async function main() {
     await processQuestCNNames();
     await processInstanceCNNames();
     await processMultilingualNames();
+    await processMobPositions();
     // Finalize items-index.json with merged multilingual names
     {
       const multiPath = join(OUTPUT_PATH, 'item-names-multi.json');
