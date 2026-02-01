@@ -11,9 +11,6 @@ interface MobDropViewProps {
 // Map image base URL
 const MAP_BASE_URL = 'https://xivapi.com/m';
 
-// Monster drop icon
-const MOB_DROP_ICON = 'https://xivapi.com/i/061000/061819.png';
-
 // Monster marker for map
 const MOB_MARKER_ICON = 'https://xivapi.com/i/060000/060004.png';
 
