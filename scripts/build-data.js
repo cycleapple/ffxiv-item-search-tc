@@ -1232,13 +1232,56 @@ async function processSources() {
             }
 
             // Check if already has this exact trade source
-            const hasSource = sourcesOutput[itemId].some(s =>
+            const existingSource = sourcesOutput[itemId].find(s =>
               s.type === 'specialshop' &&
               s.currencyItemId === primaryCurrencyItemId &&
               s.price === primaryCurrencyAmount
             );
 
-            if (!hasSource) {
+            if (existingSource) {
+              // Merge NPCs from this shop into existing source
+              const shopNpcs = shopData.npcs || [];
+              const newVendors = shopNpcs.map(npc => {
+                const npcId = npc.id;
+                let npcName = npcNameMap.get(npcId) || '';
+                if (!npcName && tcNpcs[npcId]) {
+                  const npcData = tcNpcs[npcId];
+                  npcName = npcData.ja || npcData.en || '';
+                }
+                const zoneId = npc.zoneId;
+                let zoneName = placeNameMap.get(zoneId) || '';
+                if (!zoneName && tcPlaces[zoneId]) {
+                  zoneName = tcPlaces[zoneId].ja || tcPlaces[zoneId].en || '';
+                }
+                const coords = npc.coords || {};
+                let aetheryteName = '';
+                if (coords.x && coords.y) {
+                  const nearest = findNearestAetheryte(zoneId, coords.x, coords.y);
+                  if (nearest && nearest.nameid) {
+                    aetheryteName = placeNameMap.get(nearest.nameid) || '';
+                    if (!aetheryteName && tcPlaces[nearest.nameid]) {
+                      aetheryteName = tcPlaces[nearest.nameid].ja || tcPlaces[nearest.nameid].en || '';
+                    }
+                  }
+                }
+                return { npcName, zoneName, x: coords.x, y: coords.y, aetheryteName };
+              }).filter(v => v.npcName);
+
+              if (existingSource.vendors && newVendors.length > 0) {
+                // Add only NPCs not already in the list (by name + zone)
+                for (const nv of newVendors) {
+                  const isDuplicate = existingSource.vendors.some(ev =>
+                    ev.npcName === nv.npcName && ev.zoneName === nv.zoneName &&
+                    Math.abs((ev.x || 0) - (nv.x || 0)) < 0.5 && Math.abs((ev.y || 0) - (nv.y || 0)) < 0.5
+                  );
+                  if (!isDuplicate) {
+                    existingSource.vendors.push(nv);
+                  }
+                }
+              } else if (!existingSource.vendors && newVendors.length > 0) {
+                existingSource.vendors = newVendors;
+              }
+            } else {
               // Determine currency type name
               let currencyName = '兌換';
               if (primaryCurrencyItemId >= 28 && primaryCurrencyItemId <= 46) {
