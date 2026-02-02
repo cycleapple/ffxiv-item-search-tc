@@ -74,6 +74,21 @@ export function AlarmProvider({ children }: { children: ReactNode }) {
     saveState(state);
   }, [state]);
 
+  // Cross-tab sync via storage event
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== STORAGE_KEY || !e.newValue) return;
+      try {
+        const newState = JSON.parse(e.newValue) as AlarmState;
+        if (newState.groups && newState.groups.length > 0) {
+          setState(newState);
+        }
+      } catch { /* ignore parse errors */ }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
   // Notification checker
   useEffect(() => {
     if (state.alarms.length === 0) return;
