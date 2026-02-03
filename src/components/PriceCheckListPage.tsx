@@ -1,5 +1,5 @@
 // Price check list page component
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { usePriceCheckList } from '../hooks/usePriceCheckList';
 import { usePriceCheckListData, type QualityFilter } from '../hooks/usePriceCheckListData';
