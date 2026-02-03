@@ -524,9 +524,13 @@ async function processItems() {
   // Includes multilingual names so only one fetch is needed
   // Format: { categories, fields: [...fieldNames], items: [[val,val,...], ...] }
   // Note: en/ja/cn fields are populated later by finalizeItemsIndex() after processMultilingualNames()
-  const indexFields = ['id','name','icon','itemLevel','equipLevel','rarity','categoryId','categoryName','canBeHq','stackSize','isUntradable','isCraftable','isGatherable','patch'];
+  const indexFields = ['id','name','icon','itemLevel','equipLevel','rarity','categoryId','categoryName','canBeHq','stackSize','isUntradable','isCraftable','isGatherable','patch','classJobCategoryName'];
   const indexItems = Object.values(itemsOutput).map(item =>
     indexFields.map(f => {
+      // Handle nested equipStats fields
+      if (f === 'classJobCategoryName') {
+        return item.equipStats?.classJobCategoryName || '';
+      }
       const v = item[f];
       if (v === true) return 1;
       if (v === false || v === undefined || v === null) return 0;

@@ -119,6 +119,11 @@ function decodeIndexItems(indexData: IndexData): { items: Record<number, Item>; 
       }
     }
     obj.description = '';
+    // Reconstruct nested equipStats from flat classJobCategoryName field
+    if (obj.classJobCategoryName) {
+      obj.equipStats = { classJobCategoryName: obj.classJobCategoryName };
+      delete obj.classJobCategoryName;
+    }
     const id = obj.id as number;
     items[id] = obj as unknown as Item;
     if (Object.keys(mn).length > 0) {
