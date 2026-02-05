@@ -334,7 +334,7 @@ export function CraftingMaterialTreeView({ tree, qualityFilter, showCrystals, sh
                             <CopyButton text={mat.item.name} />
                           </div>
                           <div className="text-xs text-[var(--ffxiv-muted)]">
-                            需要: {mat.totalQuantity}
+                            需要: {allMaterials.get(mat.item.id)?.totalQuantity ?? mat.totalQuantity}
                           </div>
                         </div>
                       </div>
