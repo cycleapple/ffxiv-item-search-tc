@@ -1,9 +1,12 @@
 // Main crafting price tree component
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useCraftingTree, type QualityFilter } from '../hooks/useCraftingTree';
 import { CraftingTreeNodeComponent } from './CraftingTreeNode';
 import { CraftingMaterialTreeView } from './CraftingMaterialTreeView';
-import { formatPrice } from '../services/universalisApi';
+import { formatPrice, formatRelativeTime } from '../services/universalisApi';
+
+// Local storage key for owned materials (per item)
+const OWNED_STORAGE_KEY_PREFIX = 'crafting-owned-';
 
 interface CraftingPriceTreeProps {
   itemId: number;
@@ -16,6 +19,51 @@ export function CraftingPriceTree({ itemId, isUntradable }: CraftingPriceTreePro
   const [showCrystals, setShowCrystals] = useState(false);
   const [qualityFilter, setQualityFilter] = useState<QualityFilter>('both');
   const [viewMode, setViewMode] = useState<ViewMode>('flat');
+  const [showOwned, setShowOwned] = useState(false);
+  const [ownedMaterials, setOwnedMaterials] = useState<Record<number, number>>(() => {
+    // Load from localStorage on mount
+    const storageKey = `${OWNED_STORAGE_KEY_PREFIX}${itemId}`;
+    try {
+      const stored = localStorage.getItem(storageKey);
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  // Save owned materials to localStorage when they change
+  const handleOwnedChange = useCallback((matItemId: number, quantity: number) => {
+    setOwnedMaterials(prev => {
+      const next = { ...prev };
+      if (quantity === 0) {
+        delete next[matItemId];
+      } else {
+        next[matItemId] = quantity;
+      }
+      // Save to localStorage
+      const storageKey = `${OWNED_STORAGE_KEY_PREFIX}${itemId}`;
+      try {
+        if (Object.keys(next).length === 0) {
+          localStorage.removeItem(storageKey);
+        } else {
+          localStorage.setItem(storageKey, JSON.stringify(next));
+        }
+      } catch {
+        // Ignore storage errors
+      }
+      return next;
+    });
+  }, [itemId]);
+
+  const handleOwnedClear = useCallback(() => {
+    setOwnedMaterials({});
+    const storageKey = `${OWNED_STORAGE_KEY_PREFIX}${itemId}`;
+    try {
+      localStorage.removeItem(storageKey);
+    } catch {
+      // Ignore storage errors
+    }
+  }, [itemId]);
 
   // Always build tree with crystals included; each view filters independently
   const { tree, loading, error, totalCraftCost, totalBuyCostHQ, refresh } = useCraftingTree(
@@ -88,16 +136,37 @@ export function CraftingPriceTree({ itemId, isUntradable }: CraftingPriceTreePro
             />
             <span className="text-[var(--ffxiv-muted)]">顯示水晶</span>
           </label>
+
+          {/* Show owned toggle */}
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showOwned}
+              onChange={(e) => setShowOwned(e.target.checked)}
+              className="w-4 h-4 rounded border-[var(--ffxiv-accent)] bg-[var(--ffxiv-card)] text-[var(--ffxiv-highlight)] focus:ring-[var(--ffxiv-highlight)]"
+            />
+            <span className="text-[var(--ffxiv-muted)]">擁有數量</span>
+          </label>
         </div>
 
-        {/* Refresh button */}
-        <button
-          onClick={refresh}
-          disabled={loading}
-          className="text-sm text-[var(--ffxiv-highlight)] hover:underline disabled:opacity-50"
-        >
-          {loading ? '載入中...' : '重新整理'}
-        </button>
+        {/* Refresh and clear buttons */}
+        <div className="flex items-center gap-4">
+          {showOwned && Object.keys(ownedMaterials).length > 0 && (
+            <button
+              onClick={handleOwnedClear}
+              className="text-sm text-[var(--ffxiv-muted)] hover:text-[var(--ffxiv-error)] transition-colors"
+            >
+              清除擁有數量
+            </button>
+          )}
+          <button
+            onClick={refresh}
+            disabled={loading}
+            className="text-sm text-[var(--ffxiv-highlight)] hover:underline disabled:opacity-50"
+          >
+            {loading ? '載入中...' : '重新整理'}
+          </button>
+        </div>
       </div>
 
       {/* Loading state */}
@@ -164,6 +233,13 @@ export function CraftingPriceTree({ itemId, isUntradable }: CraftingPriceTreePro
                 無法計算製作成本
               </div>
             )}
+
+            {/* Last upload time */}
+            {tree.lastUploadTime && (
+              <div className="text-xs text-[var(--ffxiv-muted)] text-right mt-2 pt-2 border-t border-[var(--ffxiv-accent)]/30">
+                資料更新: {formatRelativeTime(tree.lastUploadTime)}
+              </div>
+            )}
           </div>
 
           {/* Materials view - based on view mode */}
@@ -189,6 +265,9 @@ export function CraftingPriceTree({ itemId, isUntradable }: CraftingPriceTreePro
                   tree={tree}
                   qualityFilter={qualityFilter}
                   showCrystals={showCrystals}
+                  showOwned={showOwned}
+                  ownedMaterials={ownedMaterials}
+                  onOwnedChange={handleOwnedChange}
                 />
               )}
             </div>
