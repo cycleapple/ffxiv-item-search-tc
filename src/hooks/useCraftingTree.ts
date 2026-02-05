@@ -195,6 +195,7 @@ function applyPrices(
     node.serverNQ = nqResult.server;
     node.serverHQ = hqResult.server;
     node.listings = extractListings(priceData, 8);
+    node.lastUploadTime = priceData.lastUploadTime;
   }
 
   for (const child of node.children) {

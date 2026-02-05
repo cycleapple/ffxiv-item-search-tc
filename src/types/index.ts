@@ -352,6 +352,7 @@ export interface CraftingTreeNode {
   depth: number;                   // Tree depth level
   isCollapsed?: boolean;           // UI collapse state
   listings?: ListingInfo[];        // Recent listings for tooltip
+  lastUploadTime?: number;         // Market data last upload time (Unix timestamp in seconds)
 }
 
 // Price check list item for tracking items to compare prices

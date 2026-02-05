@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import type { PriceCheckListItemData } from '../hooks/usePriceCheckListData';
 import type { QualityFilter } from '../hooks/useCraftingTree';
 import { getItemIconUrl } from '../services/xivapiService';
-import { formatPrice } from '../services/universalisApi';
+import { formatPrice, formatRelativeTime } from '../services/universalisApi';
 import { CraftingTreeNodeComponent } from './CraftingTreeNode';
 import { CopyButton } from './CopyButton';
 import { ListingsTooltip } from './ListingsTooltip';
@@ -79,7 +79,7 @@ export function PriceCheckListItemComponent({
           {!hasTree && <div className="w-6" />}
 
           {/* Item icon */}
-          <ListingsTooltip listings={tree?.listings}>
+          <ListingsTooltip listings={tree?.listings} lastUploadTime={tree?.lastUploadTime}>
             <Link
               to={`/item/${item.id}`}
               className="flex-shrink-0 w-12 h-12 bg-[var(--ffxiv-bg)] rounded overflow-hidden"
@@ -135,6 +135,11 @@ export function PriceCheckListItemComponent({
               )}
               {totalBuyCostHQ === 0 && totalCraftCost === 0 && (
                 <div className="text-[var(--ffxiv-muted)]">無價格資料</div>
+              )}
+              {tree?.lastUploadTime && (
+                <div className="text-[var(--ffxiv-muted)] text-xs">
+                  更新: {formatRelativeTime(tree.lastUploadTime)}
+                </div>
               )}
             </div>
           </div>

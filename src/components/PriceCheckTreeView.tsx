@@ -41,6 +41,7 @@ interface AggregatedMaterial {
   depth: number;
   hasRecipe: boolean;
   listings?: ListingInfo[];
+  lastUploadTime?: number;
   // Track direct parents for line drawing
   directParents: { parentId: number; rootId: number }[];
 }
@@ -118,6 +119,7 @@ function collectMaterials(
         depth,
         hasRecipe: child.recipe !== null && child.children.length > 0,
         listings: child.listings,
+        lastUploadTime: child.lastUploadTime,
         directParents: [{ parentId: directParentId, rootId: rootItemId }],
       });
     }
@@ -601,7 +603,7 @@ export function PriceCheckTreeView({ items, qualityFilter, onRemove, ownedMateri
                   </button>
 
                   <div className="flex items-center gap-2 mb-2 pr-4 mt-1">
-                    <ListingsTooltip listings={itemData.tree?.listings}>
+                    <ListingsTooltip listings={itemData.tree?.listings} lastUploadTime={itemData.tree?.lastUploadTime}>
                       <Link
                         to={`/item/${item.id}`}
                         className="w-8 h-8 bg-[var(--ffxiv-bg)] rounded overflow-hidden flex-shrink-0"
@@ -731,7 +733,7 @@ export function PriceCheckTreeView({ items, qualityFilter, onRemove, ownedMateri
                       <div className="p-3 flex-1 min-w-0">
                         {/* Item header */}
                         <div className="flex items-center gap-2 mb-2">
-                          <ListingsTooltip listings={mat.listings}>
+                          <ListingsTooltip listings={mat.listings} lastUploadTime={mat.lastUploadTime}>
                             <Link
                               to={`/item/${mat.item.id}`}
                               className="w-8 h-8 bg-[var(--ffxiv-bg)] rounded overflow-hidden flex-shrink-0"

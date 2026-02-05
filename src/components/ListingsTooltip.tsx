@@ -6,6 +6,7 @@ import { formatPrice } from '../services/universalisApi';
 
 interface ListingsTooltipProps {
   listings?: ListingInfo[];
+  lastUploadTime?: number;
   children: React.ReactNode;
 }
 
@@ -28,7 +29,7 @@ function formatRelativeTime(timestamp: number): string {
   return new Date(timestamp * 1000).toLocaleDateString('zh-TW');
 }
 
-export function ListingsTooltip({ listings, children }: ListingsTooltipProps) {
+export function ListingsTooltip({ listings, lastUploadTime, children }: ListingsTooltipProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const triggerRef = useRef<HTMLDivElement>(null);
@@ -125,6 +126,11 @@ export function ListingsTooltip({ listings, children }: ListingsTooltipProps) {
               ))}
             </tbody>
           </table>
+          {lastUploadTime && (
+            <div className="text-xs text-[var(--ffxiv-muted)] mt-2 pt-2 border-t border-[var(--ffxiv-border)]/50 text-right">
+              資料更新: {formatRelativeTime(lastUploadTime)}
+            </div>
+          )}
         </div>,
         document.body
       )}

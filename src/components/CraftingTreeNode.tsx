@@ -73,7 +73,7 @@ export function CraftingTreeNodeComponent({ node, showCrystals, qualityFilter }:
         ${node.depth > 0 ? 'ml-10' : ''}
       `}>
         {/* Item icon with tooltip */}
-        <ListingsTooltip listings={node.listings}>
+        <ListingsTooltip listings={node.listings} lastUploadTime={node.lastUploadTime}>
           <Link
             to={`/item/${node.item.id}`}
             className="flex-shrink-0 w-10 h-10 bg-[var(--ffxiv-bg)] rounded overflow-hidden relative"
