@@ -284,6 +284,9 @@ export function CraftingMaterialTreeView({ tree, qualityFilter, showCrystals, sh
       const myDepth = mat ? mat.depth : 0;
 
       const result = Array.from(childMap.entries()).every(([childId, qtyNeeded]) => {
+        // Skip materials that are filtered out (e.g., crystals when showCrystals is false)
+        if (!allMaterials.has(childId)) return true;
+
         if (statusMap.get(childId) === 'green') return true;
         if (childAllocatedForParent(childId, myDepth, qtyNeeded)) return true;
         return canCraft(childId);
