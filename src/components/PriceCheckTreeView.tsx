@@ -671,6 +671,10 @@ export function PriceCheckTreeView({ items, qualityFilter, onRemove, ownedMateri
                 {/* Ghost cards for displaced direct materials */}
                 {depth === 1 && Array.from(displacedDirectMaterials.values()).map((mat) => {
                   const iconUrl = getItemIconUrl(mat.item.icon);
+                  let directQty = 0;
+                  for (const root of rootItems) {
+                    directQty += materialChildren.get(root.item!.id)?.get(mat.item.id) ?? 0;
+                  }
                   return (
                     <div
                       key={`ghost-${mat.item.id}`}
@@ -700,7 +704,7 @@ export function PriceCheckTreeView({ items, qualityFilter, onRemove, ownedMateri
                             {mat.item.name}
                           </div>
                           <div className="text-xs text-[var(--ffxiv-muted)]">
-                            ↓ 見 {mat.depth} 層
+                            ↓ 見 {mat.depth} 層 ({directQty})
                           </div>
                         </div>
                       </div>

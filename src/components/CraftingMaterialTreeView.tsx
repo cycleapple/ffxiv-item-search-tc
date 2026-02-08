@@ -339,6 +339,7 @@ export function CraftingMaterialTreeView({ tree, qualityFilter, showCrystals, sh
               {/* Ghost cards for displaced direct materials */}
               {depth === 1 && Array.from(displacedDirectMaterials.values()).map((mat) => {
                 const iconUrl = getItemIconUrl(mat.item.icon);
+                const directQty = materialChildren.get(tree.item.id)?.get(mat.item.id) ?? 0;
                 return (
                   <div
                     key={`ghost-${mat.item.id}`}
@@ -367,7 +368,7 @@ export function CraftingMaterialTreeView({ tree, qualityFilter, showCrystals, sh
                           {mat.item.name}
                         </div>
                         <div className="text-xs text-[var(--ffxiv-muted)]">
-                          ↓ 見 {mat.depth} 層
+                          ↓ 見 {mat.depth} 層 ({directQty})
                         </div>
                       </div>
                     </div>
