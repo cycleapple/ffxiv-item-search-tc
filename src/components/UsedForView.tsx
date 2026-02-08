@@ -1,10 +1,10 @@
 // Used for view component - shows what recipes use this item as an ingredient
-import { Link } from 'react-router-dom';
 import type { Recipe } from '../types';
 import { getItemById } from '../services/searchService';
 import { getItemIconUrl } from '../services/xivapiService';
 import { getDesynthResults, getTradesForCurrency } from '../hooks/useItemData';
 import { CopyButton } from './CopyButton';
+import { ItemLink } from './ItemLink';
 
 interface UsedForViewProps {
   itemId: number;
@@ -111,8 +111,8 @@ export function UsedForView({ itemId, recipes }: UsedForViewProps) {
                   key={recipe.id}
                   className="flex items-center gap-3 p-3 bg-[var(--ffxiv-bg)] rounded-lg border border-[var(--ffxiv-accent)] hover:border-[var(--ffxiv-highlight)] transition-colors"
                 >
-                  <Link
-                    to={`/item/${recipe.itemId}`}
+                  <ItemLink
+                    itemId={recipe.itemId}
                     className="flex items-center gap-3 flex-1 min-w-0"
                   >
                     {/* Item icon */}
@@ -139,7 +139,7 @@ export function UsedForView({ itemId, recipes }: UsedForViewProps) {
                         )}
                       </div>
                     </div>
-                  </Link>
+                  </ItemLink>
 
                   <CopyButton text={resultItem.name} />
 
@@ -180,8 +180,8 @@ export function UsedForView({ itemId, recipes }: UsedForViewProps) {
                   key={resultItemId}
                   className="flex items-center gap-3 p-3 bg-[var(--ffxiv-bg)] rounded-lg border border-[var(--ffxiv-accent)] hover:border-[var(--ffxiv-highlight)] transition-colors"
                 >
-                  <Link
-                    to={`/item/${resultItemId}`}
+                  <ItemLink
+                    itemId={resultItemId}
                     className="flex items-center gap-3 flex-1 min-w-0"
                   >
                     {/* Item icon */}
@@ -204,7 +204,7 @@ export function UsedForView({ itemId, recipes }: UsedForViewProps) {
                         {resultItem.categoryName}
                       </div>
                     </div>
-                  </Link>
+                  </ItemLink>
                   <CopyButton text={resultItem.name} />
                 </div>
               );
@@ -246,8 +246,8 @@ export function UsedForView({ itemId, recipes }: UsedForViewProps) {
                           key={currency.id}
                           className="flex items-center gap-1 px-2 py-1 bg-[var(--ffxiv-card)] rounded"
                         >
-                          <Link
-                            to={`/item/${currency.id}`}
+                          <ItemLink
+                            itemId={currency.id}
                             className="flex items-center gap-1 hover:text-[var(--ffxiv-accent)] transition-colors"
                           >
                             <img
@@ -257,7 +257,7 @@ export function UsedForView({ itemId, recipes }: UsedForViewProps) {
                               loading="lazy"
                             />
                             <span className="text-xs truncate max-w-[100px]">{currencyItem.name}</span>
-                          </Link>
+                          </ItemLink>
                           <CopyButton text={currencyItem.name} />
                           <span className="text-xs text-[var(--ffxiv-highlight)]">x{currency.amount}</span>
                         </div>
@@ -268,8 +268,8 @@ export function UsedForView({ itemId, recipes }: UsedForViewProps) {
                   {/* Result section - what you get */}
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-[var(--ffxiv-muted)]">換取:</span>
-                    <Link
-                      to={`/item/${trade.itemId}`}
+                    <ItemLink
+                      itemId={trade.itemId}
                       className="flex items-center gap-2 flex-1 min-w-0 hover:text-[var(--ffxiv-highlight)] transition-colors"
                     >
                       <div className="flex-shrink-0 w-8 h-8 bg-[var(--ffxiv-card)] rounded overflow-hidden">
@@ -284,7 +284,7 @@ export function UsedForView({ itemId, recipes }: UsedForViewProps) {
                         />
                       </div>
                       <span className="font-medium truncate">{tradeItem.name}</span>
-                    </Link>
+                    </ItemLink>
                     <CopyButton text={tradeItem.name} />
                     <span className="text-sm text-[var(--ffxiv-highlight)] flex-shrink-0">
                       x{trade.amount}

@@ -1,6 +1,6 @@
 // Main App component
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
-import { useState, lazy, Suspense } from 'react';
+import { BrowserRouter, Routes, Route, Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { useState, useCallback, useRef, lazy, Suspense } from 'react';
 import { SearchBar } from './components/SearchBar';
 import { FilterPanel } from './components/FilterPanel';
 import { ItemList } from './components/ItemList';
@@ -10,9 +10,10 @@ import { useSearch } from './hooks/useSearch';
 import { PriceCheckListProvider, usePriceCheckList } from './contexts/PriceCheckListContext';
 import { AlarmProvider, useAlarms } from './contexts/AlarmContext';
 import { EorzeanClock } from './components/EorzeanClock';
+import { DetailNavigationContext } from './contexts/DetailNavigationContext';
+import { ItemDetailContent, ItemDetail } from './components/ItemDetail';
 
 // Lazy-loaded route components
-const ItemDetail = lazy(() => import('./components/ItemDetail').then(m => ({ default: m.ItemDetail })));
 const CraftingSimulator = lazy(() => import('./components/crafting').then(m => ({ default: m.CraftingSimulator })));
 const PriceCheckListPage = lazy(() => import('./components/PriceCheckListPage').then(m => ({ default: m.PriceCheckListPage })));
 const AlarmsPage = lazy(() => import('./components/AlarmsPage').then(m => ({ default: m.AlarmsPage })));
@@ -21,47 +22,117 @@ const AlarmsPage = lazy(() => import('./components/AlarmsPage').then(m => ({ def
 function HomePage() {
   const { categories, loading, error } = useItemData();
   const { filters, results, totalResults, isSearching, hasSearched, hasMore, updateQuery, updateFilters, resetFilters, loadMore } = useSearch();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const isFirstSelect = useRef(true);
+
+  const selectedItemId = searchParams.get('selected') ? parseInt(searchParams.get('selected')!) : null;
+
+  const handleItemSelect = useCallback((id: number) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('selected', String(id));
+    if (isFirstSelect.current || !selectedItemId) {
+      // Push for first selection (enables back button)
+      isFirstSelect.current = false;
+      navigate(`?${newParams.toString()}`, { replace: false });
+    } else {
+      // Replace for subsequent selections (avoid history spam)
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [searchParams, selectedItemId, navigate, setSearchParams]);
+
+  const handleCloseDetail = useCallback(() => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete('selected');
+    isFirstSelect.current = true;
+    const paramString = newParams.toString();
+    navigate(paramString ? `?${paramString}` : '', { replace: false });
+  }, [searchParams, navigate]);
+
+  const handleDetailNavigate = useCallback((id: number) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('selected', String(id));
+    setSearchParams(newParams, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   if (error) {
     return (
-      <div className="text-center py-12">
+      <div className="max-w-6xl mx-auto text-center py-12">
         <div className="text-red-400 mb-4">載入資料時發生錯誤</div>
         <div className="text-sm text-[var(--ffxiv-muted)]">{error}</div>
       </div>
     );
   }
 
+  const hasSelected = selectedItemId !== null;
+
   return (
-    <div>
-      {/* Search bar */}
-      <div className="mb-4">
-        <SearchBar
-          value={filters.query}
-          onChange={updateQuery}
-          placeholder="搜尋物品名稱..."
-        />
-      </div>
+    <div className={`mx-auto transition-all duration-200 ${hasSelected ? 'max-w-[1400px]' : 'max-w-6xl'}`}>
+      <div className={`${hasSelected ? 'lg:flex lg:gap-4' : ''}`}>
+        {/* Search panel (left side on desktop) */}
+        <div className={`${hasSelected ? 'lg:w-[400px] lg:flex-shrink-0 lg:sticky lg:top-[73px] lg:h-[calc(100vh-73px-24px)] lg:overflow-y-auto' : ''}`}>
+          {/* Search bar */}
+          <div className="mb-4">
+            <SearchBar
+              value={filters.query}
+              onChange={updateQuery}
+              placeholder="搜尋物品名稱..."
+            />
+          </div>
 
-      {/* Filters (always visible) */}
-      <div className="mb-4">
-        <FilterPanel
-          filters={filters}
-          categories={categories}
-          onFilterChange={updateFilters}
-          onReset={resetFilters}
-        />
-      </div>
+          {/* Filters (always visible) */}
+          <div className="mb-4">
+            <FilterPanel
+              filters={filters}
+              categories={categories}
+              onFilterChange={updateFilters}
+              onReset={resetFilters}
+            />
+          </div>
 
-      {/* Results */}
-      <ItemList
-        results={results}
-        totalResults={totalResults}
-        loading={loading || isSearching}
-        hasSearched={hasSearched}
-        hasMore={hasMore}
-        onLoadMore={loadMore}
-        query={filters.query}
-      />
+          {/* Results */}
+          <ItemList
+            results={results}
+            totalResults={totalResults}
+            loading={loading || isSearching}
+            hasSearched={hasSearched}
+            hasMore={hasMore}
+            onLoadMore={loadMore}
+            query={filters.query}
+            onItemSelect={handleItemSelect}
+            selectedItemId={selectedItemId}
+          />
+        </div>
+
+        {/* Detail panel (right side on desktop, overlay on mobile) */}
+        {hasSelected && (
+          <>
+            {/* Mobile overlay */}
+            <div className="fixed inset-0 z-30 bg-[var(--ffxiv-bg)] lg:hidden detail-overlay-enter overflow-y-auto">
+              <div className="px-4 py-6">
+                <DetailNavigationContext.Provider value={{ navigateToItem: handleDetailNavigate }}>
+                  <ItemDetailContent
+                    itemId={selectedItemId}
+                    onClose={handleCloseDetail}
+                    isPanel
+                  />
+                </DetailNavigationContext.Provider>
+              </div>
+            </div>
+
+            {/* Desktop panel */}
+            <div className="hidden lg:block flex-1 min-w-0 lg:sticky lg:top-[73px] lg:h-[calc(100vh-73px-24px)] lg:overflow-y-auto detail-panel-enter">
+              <DetailNavigationContext.Provider value={{ navigateToItem: handleDetailNavigate }}>
+                <ItemDetailContent
+                  itemId={selectedItemId}
+                  onClose={handleCloseDetail}
+                  isPanel
+                />
+              </DetailNavigationContext.Provider>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -162,7 +233,7 @@ function AppContent() {
       <Header onSettingsOpen={() => setSettingsOpen(true)} />
 
       {/* Main content */}
-      <main className="max-w-6xl mx-auto px-4 py-6 flex-1 w-full">
+      <main className="px-4 py-6 flex-1 w-full">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-12">
             <div className="animate-spin rounded-full h-10 w-10 border-3 border-[var(--ffxiv-border)] border-t-[var(--ffxiv-accent)] mb-4"></div>
@@ -176,10 +247,10 @@ function AppContent() {
           }>
             <Routes>
               <Route path="/" element={<HomePage />} />
-              <Route path="/item/:id" element={<ItemDetail />} />
-              <Route path="/craft/:itemId" element={<CraftingSimulator />} />
-              <Route path="/pricelist" element={<PriceCheckListPage />} />
-              <Route path="/alarms" element={<AlarmsPage />} />
+              <Route path="/item/:id" element={<div className="max-w-6xl mx-auto"><ItemDetail /></div>} />
+              <Route path="/craft/:itemId" element={<div className="max-w-6xl mx-auto"><CraftingSimulator /></div>} />
+              <Route path="/pricelist" element={<div className="max-w-6xl mx-auto"><PriceCheckListPage /></div>} />
+              <Route path="/alarms" element={<div className="max-w-6xl mx-auto"><AlarmsPage /></div>} />
             </Routes>
           </Suspense>
         )}

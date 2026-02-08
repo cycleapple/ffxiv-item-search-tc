@@ -76,6 +76,26 @@ body {
   background: var(--ffxiv-muted);
 }
 
+/* Mobile overlay slide-in animation */
+@keyframes detail-overlay-slide-in {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.detail-overlay-enter {
+  animation: detail-overlay-slide-in 0.2s ease-out;
+}
+
+/* Desktop panel fade-in */
+@keyframes detail-panel-fade-in {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.detail-panel-enter {
+  animation: detail-panel-fade-in 0.2s ease-out;
+}
+
 /* Item rarity colors */
 .rarity-common { color: #ffffff; }
 .rarity-uncommon { color: #9cff9c; }

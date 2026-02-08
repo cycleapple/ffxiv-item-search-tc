@@ -1,9 +1,4 @@
 // Prefetch helpers for lazy-loaded route components
-
-let itemDetailPrefetched = false;
-
-export function prefetchItemDetail() {
-  if (itemDetailPrefetched) return;
-  itemDetailPrefetched = true;
-  import('./components/ItemDetail');
-}
+// ItemDetail is now statically imported (used by HomePage master-detail layout),
+// so this is a no-op but kept for API compatibility.
+export function prefetchItemDetail() {}

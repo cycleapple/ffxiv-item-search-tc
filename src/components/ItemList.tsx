@@ -10,6 +10,8 @@ interface ItemListProps {
   hasMore?: boolean;      // Whether there are more results to load
   onLoadMore?: () => void;
   query?: string;
+  onItemSelect?: (id: number) => void;
+  selectedItemId?: number | null;
 }
 
 export function ItemList({
@@ -20,6 +22,8 @@ export function ItemList({
   hasMore = false,
   onLoadMore,
   query,
+  onItemSelect,
+  selectedItemId,
 }: ItemListProps) {
   // Initial state - no search performed yet
   if (!hasSearched) {
@@ -100,7 +104,7 @@ export function ItemList({
       </div>
       <div className="grid gap-2">
         {results.map((result) => (
-          <ItemCard key={result.item.id} item={result.item} query={query} />
+          <ItemCard key={result.item.id} item={result.item} query={query} onSelect={onItemSelect} isSelected={selectedItemId === result.item.id} />
         ))}
       </div>
       {hasMore && onLoadMore && (

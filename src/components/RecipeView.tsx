@@ -1,9 +1,10 @@
 // Recipe view component
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import type { Recipe } from '../types';
 import { getItemById } from '../services/searchService';
 import { getItemIconUrl } from '../services/xivapiService';
 import { CopyButton } from './CopyButton';
+import { ItemLink } from './ItemLink';
 
 interface RecipeViewProps {
   recipes: Recipe[];
@@ -122,8 +123,8 @@ export function RecipeView({ recipes }: RecipeViewProps) {
             {masterBook && (
               <div className="flex items-center gap-2 p-2 mb-3 bg-[var(--ffxiv-bg-tertiary)] rounded border border-[var(--ffxiv-warning)]/30">
                 <span className="text-xs text-[var(--ffxiv-warning)]">秘笈</span>
-                <Link
-                  to={`/item/${masterBook.id}`}
+                <ItemLink
+                  itemId={masterBook.id}
                   className="flex items-center gap-2 flex-1 min-w-0 hover:text-[var(--ffxiv-accent)] transition-colors"
                 >
                   <div className="w-5 h-5 bg-[var(--ffxiv-bg)] rounded overflow-hidden flex-shrink-0">
@@ -135,7 +136,7 @@ export function RecipeView({ recipes }: RecipeViewProps) {
                     />
                   </div>
                   <span className="text-sm text-[var(--ffxiv-warning)]">{masterBook.name}</span>
-                </Link>
+                </ItemLink>
                 <CopyButton text={masterBook.name} />
               </div>
             )}
@@ -180,8 +181,8 @@ export function RecipeView({ recipes }: RecipeViewProps) {
                     key={i}
                     className="flex items-center gap-2 p-2 bg-[var(--ffxiv-card)] rounded"
                   >
-                    <Link
-                      to={`/item/${ing.itemId}`}
+                    <ItemLink
+                      itemId={ing.itemId}
                       className="flex items-center gap-2 flex-1 min-w-0 hover:text-[var(--ffxiv-accent)] transition-colors"
                     >
                       <div className="w-6 h-6 bg-[var(--ffxiv-bg)] rounded overflow-hidden flex-shrink-0">
@@ -193,7 +194,7 @@ export function RecipeView({ recipes }: RecipeViewProps) {
                         />
                       </div>
                       <span className="text-sm truncate">{item.name}</span>
-                    </Link>
+                    </ItemLink>
                     <CopyButton text={item.name} />
                     <span className="text-sm text-[var(--ffxiv-muted)] flex-shrink-0">x{ing.amount}</span>
                   </div>

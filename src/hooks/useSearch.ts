@@ -66,9 +66,21 @@ function parseUrlParams(searchParams: URLSearchParams): Partial<SearchFilters> {
   return filters;
 }
 
-// Convert filters to URL params
-function filtersToUrlParams(filters: SearchFilters): URLSearchParams {
+// Filter param keys managed by useSearch
+const FILTER_PARAM_KEYS = new Set(['q', 'cat', 'minLv', 'maxLv', 'minEq', 'maxEq', 'jobs', 'craft', 'gather', 'hq', 'trade', 'rarity', 'patch']);
+
+// Convert filters to URL params, preserving non-filter params (e.g. 'selected')
+function filtersToUrlParams(filters: SearchFilters, currentParams?: URLSearchParams): URLSearchParams {
   const params = new URLSearchParams();
+
+  // Preserve non-filter params from current URL
+  if (currentParams) {
+    currentParams.forEach((value, key) => {
+      if (!FILTER_PARAM_KEYS.has(key)) {
+        params.set(key, value);
+      }
+    });
+  }
 
   if (filters.query) params.set('q', filters.query);
   if (filters.categoryId !== null) params.set('cat', String(filters.categoryId));
@@ -136,17 +148,24 @@ export function useSearch(): UseSearchReturn {
 
   const updateQuery = useCallback((query: string) => {
     const newFilters = { ...filters, query };
-    setSearchParams(filtersToUrlParams(newFilters), { replace: true });
-  }, [filters, setSearchParams]);
+    setSearchParams(filtersToUrlParams(newFilters, searchParams), { replace: true });
+  }, [filters, searchParams, setSearchParams]);
 
   const updateFilters = useCallback((updates: Partial<SearchFilters>) => {
     const newFilters = { ...filters, ...updates };
-    setSearchParams(filtersToUrlParams(newFilters), { replace: true });
-  }, [filters, setSearchParams]);
+    setSearchParams(filtersToUrlParams(newFilters, searchParams), { replace: true });
+  }, [filters, searchParams, setSearchParams]);
 
   const resetFilters = useCallback(() => {
-    setSearchParams(new URLSearchParams(), { replace: true });
-  }, [setSearchParams]);
+    // Preserve non-filter params when resetting
+    const params = new URLSearchParams();
+    searchParams.forEach((value, key) => {
+      if (!FILTER_PARAM_KEYS.has(key)) {
+        params.set(key, value);
+      }
+    });
+    setSearchParams(params, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   // Reset display limit when filters change
   useEffect(() => {

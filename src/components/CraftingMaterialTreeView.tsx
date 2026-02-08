@@ -1,12 +1,12 @@
 // Material tree view for a single crafting item - matches PriceCheckTreeView style
 import { useMemo, useRef, useCallback } from 'react';
-import { Link } from 'react-router-dom';
 import type { CraftingTreeNode, Item, ListingInfo } from '../types';
 import type { QualityFilter } from '../hooks/useCraftingTree';
 import { getItemIconUrl } from '../services/xivapiService';
 import { formatPrice } from '../services/universalisApi';
 import { ListingsTooltip } from './ListingsTooltip';
 import { CopyButton } from './CopyButton';
+import { ItemLink } from './ItemLink';
 
 interface CraftingMaterialTreeViewProps {
   tree: CraftingTreeNode;
@@ -396,8 +396,8 @@ export function CraftingMaterialTreeView({ tree, qualityFilter, showCrystals, sh
                       {/* Item header */}
                       <div className="flex items-center gap-2 mb-2">
                         <ListingsTooltip listings={mat.listings} lastUploadTime={mat.lastUploadTime}>
-                          <Link
-                            to={`/item/${mat.item.id}`}
+                          <ItemLink
+                            itemId={mat.item.id}
                             className="w-8 h-8 bg-[var(--ffxiv-bg)] rounded overflow-hidden flex-shrink-0"
                           >
                             <img
@@ -408,16 +408,16 @@ export function CraftingMaterialTreeView({ tree, qualityFilter, showCrystals, sh
                                 (e.target as HTMLImageElement).src = getItemIconUrl(0);
                               }}
                             />
-                          </Link>
+                          </ItemLink>
                         </ListingsTooltip>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-0.5">
-                            <Link
-                              to={`/item/${mat.item.id}`}
+                            <ItemLink
+                              itemId={mat.item.id}
                               className={`text-sm font-medium hover:text-[var(--ffxiv-highlight)] truncate ${getRarityClass(mat.item.rarity)}`}
                             >
                               {mat.item.name}
-                            </Link>
+                            </ItemLink>
                             <CopyButton text={mat.item.name} />
                           </div>
                           <div className="text-xs text-[var(--ffxiv-muted)]">

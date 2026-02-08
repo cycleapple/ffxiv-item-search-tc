@@ -15,6 +15,8 @@ const LANG_FLAGS: Record<string, string> = { en: '🇺🇸', ja: '🇯🇵', cn:
 interface ItemCardProps {
   item: Item;
   query?: string;
+  onSelect?: (id: number) => void;
+  isSelected?: boolean;
 }
 
 function getRarityClass(rarity: number): string {
@@ -34,7 +36,7 @@ function getRarityClass(rarity: number): string {
   }
 }
 
-export const ItemCard = memo(function ItemCard({ item, query }: ItemCardProps) {
+export const ItemCard = memo(function ItemCard({ item, query, onSelect, isSelected }: ItemCardProps) {
   const iconUrl = getItemIconUrl(item.icon);
 
   // Find matched non-TC language name
@@ -53,13 +55,11 @@ export const ItemCard = memo(function ItemCard({ item, query }: ItemCardProps) {
     return null;
   })();
 
-  return (
-    <Link
-      to={`/item/${item.id}`}
-      className="block bg-[var(--ffxiv-card)] border border-[var(--ffxiv-border)] rounded-lg p-3 hover:border-[var(--ffxiv-accent)] hover:bg-[var(--ffxiv-card-hover)] transition-all shadow-[var(--ffxiv-shadow-sm)]"
-      onMouseEnter={prefetchItemDetail}
-      onTouchStart={prefetchItemDetail}
-    >
+  const baseClassName = `block bg-[var(--ffxiv-card)] border rounded-lg p-3 hover:border-[var(--ffxiv-accent)] hover:bg-[var(--ffxiv-card-hover)] transition-all shadow-[var(--ffxiv-shadow-sm)] ${
+    isSelected ? 'border-[var(--ffxiv-highlight)] bg-[var(--ffxiv-highlight)]/10' : 'border-[var(--ffxiv-border)]'
+  }`;
+
+  const content = (
       <div className="flex items-start gap-3">
         {/* Icon */}
         <div className="flex-shrink-0 w-10 h-10 bg-[var(--ffxiv-bg-tertiary)] rounded overflow-hidden">
@@ -128,6 +128,29 @@ export const ItemCard = memo(function ItemCard({ item, query }: ItemCardProps) {
           </div>
         </div>
       </div>
+  );
+
+  if (onSelect) {
+    return (
+      <div
+        className={`${baseClassName} cursor-pointer`}
+        onClick={() => onSelect(item.id)}
+        onMouseEnter={prefetchItemDetail}
+        onTouchStart={prefetchItemDetail}
+      >
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      to={`/item/${item.id}`}
+      className={baseClassName}
+      onMouseEnter={prefetchItemDetail}
+      onTouchStart={prefetchItemDetail}
+    >
+      {content}
     </Link>
   );
 });

@@ -1,12 +1,12 @@
 // Recursive crafting tree node component
 import { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
 import type { CraftingTreeNode as TreeNodeType } from '../types';
 import type { QualityFilter } from '../hooks/useCraftingTree';
 import { getItemIconUrl } from '../services/xivapiService';
 import { formatPrice } from '../services/universalisApi';
 import { CopyButton } from './CopyButton';
 import { ListingsTooltip } from './ListingsTooltip';
+import { ItemLink } from './ItemLink';
 
 // Crystal item IDs (2-19)
 const CRYSTAL_IDS = new Set([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
@@ -74,8 +74,8 @@ export function CraftingTreeNodeComponent({ node, showCrystals, qualityFilter }:
       `}>
         {/* Item icon with tooltip */}
         <ListingsTooltip listings={node.listings} lastUploadTime={node.lastUploadTime}>
-          <Link
-            to={`/item/${node.item.id}`}
+          <ItemLink
+            itemId={node.item.id}
             className="flex-shrink-0 w-10 h-10 bg-[var(--ffxiv-bg)] rounded overflow-hidden relative"
           >
             <img
@@ -92,18 +92,18 @@ export function CraftingTreeNodeComponent({ node, showCrystals, qualityFilter }:
                 x{node.quantity}
               </span>
             )}
-          </Link>
+          </ItemLink>
         </ListingsTooltip>
 
         {/* Item info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <Link
-              to={`/item/${node.item.id}`}
+            <ItemLink
+              itemId={node.item.id}
               className="text-sm font-medium hover:text-[var(--ffxiv-highlight)] truncate"
             >
               {node.item.name}
-            </Link>
+            </ItemLink>
             <CopyButton text={node.item.name} />
             {node.recipe && (
               <span className="text-xs text-[var(--ffxiv-muted)]">

@@ -53,9 +53,13 @@ function cleanFFXIVText(text: string): string {
     .trim();
 }
 
-export function ItemDetail() {
-  const { id } = useParams<{ id: string }>();
-  const itemId = id ? parseInt(id) : null;
+interface ItemDetailContentProps {
+  itemId: number;
+  onClose?: () => void;
+  isPanel?: boolean;
+}
+
+export function ItemDetailContent({ itemId, onClose, isPanel }: ItemDetailContentProps) {
   const navigate = useNavigate();
 
   const { loading: itemsLoading } = useItemData();
@@ -93,6 +97,9 @@ export function ItemDetail() {
 
       // Get recipes that use this item as ingredient
       setUsedForRecipes(getRecipesUsingItem(itemId));
+
+      // Reset tab to default when switching items in panel mode
+      setActiveTab(getDefaultTab());
     }
   }, [itemsLoading, itemId, recipesData, gatheringData, sourcesData, fullDataReady]);
 
@@ -109,10 +116,10 @@ export function ItemDetail() {
       <div className="text-center py-12">
         <div className="text-[var(--ffxiv-muted)] mb-4">找不到此物品</div>
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => isPanel && onClose ? onClose() : navigate(-1)}
           className="text-[var(--ffxiv-accent)] hover:text-[var(--ffxiv-accent-hover)] hover:underline transition-colors"
         >
-          返回搜尋
+          {isPanel ? '關閉面板' : '返回搜尋'}
         </button>
       </div>
     );
@@ -124,17 +131,31 @@ export function ItemDetail() {
   const obtainCount = sources.length + (recipes.length > 0 ? 1 : 0) + (gatheringPoints.length > 0 ? 1 : 0);
 
   return (
-    <div className="max-w-4xl mx-auto">
-      {/* Back button */}
-      <button
-        onClick={() => navigate(-1)}
-        className="inline-flex items-center gap-1 text-sm text-[var(--ffxiv-muted)] hover:text-[var(--ffxiv-accent)] mb-4 transition-colors"
-      >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-        </svg>
-        返回搜尋
-      </button>
+    <div className={isPanel ? '' : 'max-w-4xl mx-auto'}>
+      {/* Back / Close button */}
+      {isPanel ? (
+        onClose && (
+          <button
+            onClick={onClose}
+            className="lg:hidden inline-flex items-center gap-1 text-sm text-[var(--ffxiv-muted)] hover:text-[var(--ffxiv-accent)] mb-4 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            返回搜尋
+          </button>
+        )
+      ) : (
+        <button
+          onClick={() => navigate(-1)}
+          className="inline-flex items-center gap-1 text-sm text-[var(--ffxiv-muted)] hover:text-[var(--ffxiv-accent)] mb-4 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          返回搜尋
+        </button>
+      )}
 
       {/* Item header */}
       <div className="bg-[var(--ffxiv-bg-secondary)] rounded-lg border border-[var(--ffxiv-border)] mb-6 overflow-hidden">
@@ -166,9 +187,9 @@ export function ItemDetail() {
                 const names = getMultilingualNames(item.id);
                 if (!names) return null;
                 const entries: { label: string; value: string }[] = [];
-                if (names.en) entries.push({ label: '🇺🇸', value: names.en });
-                if (names.ja) entries.push({ label: '🇯🇵', value: names.ja });
-                if (names.cn) entries.push({ label: '🇨🇳', value: names.cn });
+                if (names.en) entries.push({ label: '\u{1F1FA}\u{1F1F8}', value: names.en });
+                if (names.ja) entries.push({ label: '\u{1F1EF}\u{1F1F5}', value: names.ja });
+                if (names.cn) entries.push({ label: '\u{1F1E8}\u{1F1F3}', value: names.cn });
                 if (entries.length === 0) return null;
                 return (
                   <div className="text-xs text-[var(--ffxiv-muted)] mt-1 space-x-3">
@@ -334,4 +355,19 @@ export function ItemDetail() {
       </div>
     </div>
   );
+}
+
+export function ItemDetail() {
+  const { id } = useParams<{ id: string }>();
+  const itemId = id ? parseInt(id) : null;
+
+  if (!itemId) {
+    return (
+      <div className="text-center py-12">
+        <div className="text-[var(--ffxiv-muted)]">無效的物品 ID</div>
+      </div>
+    );
+  }
+
+  return <ItemDetailContent itemId={itemId} />;
 }

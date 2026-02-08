@@ -1,12 +1,12 @@
 // Gathering view component - displays gathering nodes with maps like Teamcraft
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import type { GatheringPoint } from '../types';
 import { getItemById } from '../services/searchService';
 import { getItemIconUrl } from '../services/xivapiService';
 import { CopyButton } from './CopyButton';
 import GatheringTimer from './GatheringTimer';
 import { AlarmButton } from './AlarmButton';
+import { ItemLink } from './ItemLink';
 
 interface GatheringViewProps {
   points: GatheringPoint[];
@@ -440,12 +440,12 @@ export function GatheringView({ points }: GatheringViewProps) {
                               alt=""
                               className="w-5 h-5"
                             />
-                            <Link
-                              to={`/item/${folkloreItem.id}`}
+                            <ItemLink
+                              itemId={folkloreItem.id}
                               className="text-[var(--ffxiv-accent)] hover:text-[var(--ffxiv-accent-hover)] hover:underline"
                             >
                               {folkloreItem.name}
-                            </Link>
+                            </ItemLink>
                             <CopyButton text={folkloreItem.name} />
                           </div>
                         )}

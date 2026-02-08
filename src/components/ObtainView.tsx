@@ -3,12 +3,12 @@ import { useState, useEffect } from 'react';
 import type { ItemSource, Recipe, GatheringPoint, VendorInfo, VentureQuantity } from '../types';
 import { getItemById, getItemByName } from '../services/searchService';
 import { getItemIconUrl } from '../services/xivapiService';
-import { Link } from 'react-router-dom';
 import { CopyButton } from './CopyButton';
 import { MapModal } from './MapModal';
 import { MobDropView } from './MobDropView';
 import GatheringTimer from './GatheringTimer';
 import { AlarmButton } from './AlarmButton';
+import { ItemLink } from './ItemLink';
 
 // Cache for zone map name by ID
 let zoneMapNameByIdCache: Record<number, string> | null = null;
@@ -522,8 +522,8 @@ export function ObtainView({ itemId, sources, recipes, gatheringPoints }: Obtain
               return (
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-xs text-[var(--ffxiv-warning)]">秘笈</span>
-                  <Link
-                    to={`/item/${masterBook.id}`}
+                  <ItemLink
+                    itemId={masterBook.id}
                     className="flex items-center gap-1.5 hover:text-[var(--ffxiv-accent)] transition-colors"
                   >
                     <img
@@ -533,7 +533,7 @@ export function ObtainView({ itemId, sources, recipes, gatheringPoints }: Obtain
                       loading="lazy"
                     />
                     <span className="text-sm text-[var(--ffxiv-warning)]">{masterBook.name}</span>
-                  </Link>
+                  </ItemLink>
                   <CopyButton text={masterBook.name} />
                 </div>
               );
@@ -545,8 +545,8 @@ export function ObtainView({ itemId, sources, recipes, gatheringPoints }: Obtain
               return (
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-xs text-[var(--ffxiv-warning)]">傳承錄</span>
-                  <Link
-                    to={`/item/${folkloreBook.id}`}
+                  <ItemLink
+                    itemId={folkloreBook.id}
                     className="flex items-center gap-1.5 hover:text-[var(--ffxiv-accent)] transition-colors"
                   >
                     <img
@@ -556,7 +556,7 @@ export function ObtainView({ itemId, sources, recipes, gatheringPoints }: Obtain
                       loading="lazy"
                     />
                     <span className="text-sm text-[var(--ffxiv-warning)]">{folkloreBook.name}</span>
-                  </Link>
+                  </ItemLink>
                   <CopyButton text={folkloreBook.name} />
                 </div>
               );
@@ -564,8 +564,8 @@ export function ObtainView({ itemId, sources, recipes, gatheringPoints }: Obtain
             {/* Currency item for exchange sources */}
             {source.currencyItemId && source.currencyAmount && (
               <div className="flex items-center gap-2 mt-1">
-                <Link
-                  to={`/item/${source.currencyItemId}`}
+                <ItemLink
+                  itemId={source.currencyItemId}
                   className="flex items-center gap-1.5 px-2 py-1 bg-[var(--ffxiv-card)] rounded hover:bg-[var(--ffxiv-accent)] transition-colors"
                 >
                   {source.currencyItemIcon && (
@@ -578,7 +578,7 @@ export function ObtainView({ itemId, sources, recipes, gatheringPoints }: Obtain
                   )}
                   <span className="text-sm">{source.currencyItemName}</span>
                   <CopyButton text={source.currencyItemName || ''} />
-                </Link>
+                </ItemLink>
                 <span className="text-sm text-[var(--ffxiv-highlight)]">
                   x{formatPrice(source.currencyAmount)}
                 </span>
@@ -637,12 +637,12 @@ export function ObtainView({ itemId, sources, recipes, gatheringPoints }: Obtain
                             alt=""
                             className="w-6 h-6"
                           />
-                          <Link
-                            to={`/item/${treasureItem.id}`}
+                          <ItemLink
+                            itemId={treasureItem.id}
                             className="text-sm text-[var(--ffxiv-accent)] hover:text-[var(--ffxiv-accent-hover)] hover:underline"
                           >
                             {name}
-                          </Link>
+                          </ItemLink>
                           <CopyButton text={name} />
                         </>
                       ) : (
@@ -781,8 +781,8 @@ export function ObtainView({ itemId, sources, recipes, gatheringPoints }: Obtain
                     if (!desynthItem) return null;
                     return (
                       <div key={desynthItemId} className="flex items-center gap-1 px-2 py-0.5 bg-[var(--ffxiv-card)] rounded text-xs">
-                        <Link
-                          to={`/item/${desynthItemId}`}
+                        <ItemLink
+                          itemId={desynthItemId}
                           className="flex items-center gap-1 hover:text-[var(--ffxiv-accent)] transition-colors"
                         >
                           <img
@@ -792,7 +792,7 @@ export function ObtainView({ itemId, sources, recipes, gatheringPoints }: Obtain
                             loading="lazy"
                           />
                           <span>{desynthItem.name}</span>
-                        </Link>
+                        </ItemLink>
                         <CopyButton text={desynthItem.name} />
                       </div>
                     );
@@ -876,8 +876,8 @@ export function ObtainView({ itemId, sources, recipes, gatheringPoints }: Obtain
                     key={i}
                     className="flex items-center gap-2 p-2 bg-[var(--ffxiv-bg)] rounded"
                   >
-                    <Link
-                      to={`/item/${ing.itemId}`}
+                    <ItemLink
+                      itemId={ing.itemId}
                       className="flex items-center gap-2 flex-1 min-w-0 hover:text-[var(--ffxiv-accent)] transition-colors"
                     >
                       <div className="w-6 h-6 bg-[var(--ffxiv-card)] rounded overflow-hidden flex-shrink-0">
@@ -889,7 +889,7 @@ export function ObtainView({ itemId, sources, recipes, gatheringPoints }: Obtain
                         />
                       </div>
                       <span className="text-sm truncate">{item.name}</span>
-                    </Link>
+                    </ItemLink>
                     <CopyButton text={item.name} />
                     <span className="text-sm text-[var(--ffxiv-muted)] flex-shrink-0">
                       x{ing.amount}
