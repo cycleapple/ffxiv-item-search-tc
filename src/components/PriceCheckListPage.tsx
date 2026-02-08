@@ -127,7 +127,7 @@ export function PriceCheckListPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-bold text-[var(--ffxiv-text)]">
-          查價清單 ({list.length})
+          追蹤清單 ({list.length})
         </h1>
         <div className="flex items-center gap-2">
           {/* Import button */}
@@ -270,7 +270,7 @@ export function PriceCheckListPage() {
           </svg>
           <div className="text-lg text-[var(--ffxiv-muted)] mb-2">清單是空的</div>
           <div className="text-sm text-[var(--ffxiv-muted)] mb-4">
-            在搜尋結果或物品詳情頁點擊「加入查價」來新增物品
+            在搜尋結果或物品詳情頁點擊「加入追蹤」來新增物品
           </div>
           <Link
             to="/"
@@ -319,7 +319,7 @@ export function PriceCheckListPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-lg font-bold text-[var(--ffxiv-text)] mb-4">
-              匯出查價清單
+              匯出追蹤清單
             </h2>
 
             <p className="text-sm text-[var(--ffxiv-muted)] mb-3">
@@ -375,7 +375,7 @@ export function PriceCheckListPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-lg font-bold text-[var(--ffxiv-text)] mb-4">
-              匯入查價清單
+              匯入追蹤清單
             </h2>
 
             {!importResult ? (

@@ -104,9 +104,7 @@ export const ItemCard = memo(function ItemCard({ item, query, onSelect, isSelect
             {item.canBeHq && (
               <span className="px-1.5 py-0.5 bg-[var(--ffxiv-highlight)]/20 text-[var(--ffxiv-highlight)] rounded">HQ</span>
             )}
-            {!item.isUntradable && (
-              <AddToPriceListButton itemId={item.id} variant="small" />
-            )}
+            <AddToPriceListButton itemId={item.id} variant="small" />
             {item.isGatherable && (() => {
               const timedPoints = getGatheringPointsForItem(item.id)
                 .filter(p => p.spawns && p.spawns.length > 0 && p.duration);

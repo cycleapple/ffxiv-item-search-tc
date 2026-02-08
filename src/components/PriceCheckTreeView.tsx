@@ -567,7 +567,7 @@ export function PriceCheckTreeView({ items, qualityFilter, onRemove, ownedMateri
       <div className="space-y-6 relative" style={{ zIndex: 1 }} onClick={handleContainerClick}>
         {/* Root items (the items in the list) */}
         <div>
-          <div className="text-sm text-[var(--ffxiv-muted)] mb-3">查價物品</div>
+          <div className="text-sm text-[var(--ffxiv-muted)] mb-3">追蹤物品</div>
           <div className="flex flex-wrap gap-3">
             {rootItems.map((itemData) => {
               const item = itemData.item!;

@@ -54,7 +54,7 @@ export function ItemList({
           支援繁中、簡中、日文、英文搜尋
         </p>
         <p className="mt-2 text-xs text-[var(--ffxiv-muted)]">
-          💡 可使用查價清單比價、採集鬧鐘提醒、製作模擬器
+          💡 可使用追蹤清單比價、採集鬧鐘提醒、製作模擬器
         </p>
       </div>
     );

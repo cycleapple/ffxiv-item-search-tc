@@ -10,12 +10,11 @@ const OWNED_STORAGE_KEY_PREFIX = 'crafting-owned-';
 
 interface CraftingPriceTreeProps {
   itemId: number;
-  isUntradable?: boolean;
 }
 
 type ViewMode = 'tree' | 'flat';
 
-export function CraftingPriceTree({ itemId, isUntradable }: CraftingPriceTreeProps) {
+export function CraftingPriceTree({ itemId }: CraftingPriceTreeProps) {
   const [showCrystals, setShowCrystals] = useState(false);
   const [qualityFilter, setQualityFilter] = useState<QualityFilter>('both');
   const [viewMode, setViewMode] = useState<ViewMode>('flat');
@@ -71,14 +70,6 @@ export function CraftingPriceTree({ itemId, isUntradable }: CraftingPriceTreePro
     true,
     qualityFilter
   );
-
-  if (isUntradable) {
-    return (
-      <div className="bg-[var(--ffxiv-bg)] rounded-lg p-4 border border-[var(--ffxiv-accent)]">
-        <div className="text-center text-[var(--ffxiv-muted)]">此物品無法交易</div>
-      </div>
-    );
-  }
 
   // Calculate savings (HQ buy vs cheapest craft)
   const craftSavings = totalBuyCostHQ - totalCraftCost;

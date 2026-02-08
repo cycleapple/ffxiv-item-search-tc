@@ -204,9 +204,7 @@ export function ItemDetailContent({ itemId, onClose, isPanel }: ItemDetailConten
             </div>
 
             {/* Add to price list button */}
-            {!item.isUntradable && (
-              <AddToPriceListButton itemId={item.id} variant="button" />
-            )}
+            <AddToPriceListButton itemId={item.id} variant="button" />
           </div>
         </div>
 
@@ -347,7 +345,7 @@ export function ItemDetailContent({ itemId, onClose, isPanel }: ItemDetailConten
           <MarketPrice itemId={item.id} isUntradable={item.isUntradable} />
         )}
         {activeTab === 'craftcost' && (
-          <CraftingPriceTree itemId={item.id} isUntradable={item.isUntradable} />
+          <CraftingPriceTree itemId={item.id} />
         )}
         {activeTab === 'usedfor' && (
           <UsedForView itemId={item.id} recipes={usedForRecipes} />

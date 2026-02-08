@@ -27,7 +27,7 @@ export function AddToPriceListButton({ itemId, variant = 'icon', className = '' 
             ? 'text-[var(--ffxiv-highlight)] bg-[var(--ffxiv-highlight)]/20 hover:bg-[var(--ffxiv-highlight)]/30'
             : 'text-[var(--ffxiv-muted)] hover:text-[var(--ffxiv-highlight)] hover:bg-[var(--ffxiv-highlight)]/10'
         } ${className}`}
-        title={inList ? '從清單移除' : '加入查價'}
+        title={inList ? '從清單移除' : '加入追蹤'}
       >
         <svg className="w-4 h-4" fill={inList ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
@@ -46,12 +46,12 @@ export function AddToPriceListButton({ itemId, variant = 'icon', className = '' 
             ? 'text-[var(--ffxiv-highlight)] bg-[var(--ffxiv-highlight)]/20 hover:bg-[var(--ffxiv-highlight)]/30'
             : 'text-[var(--ffxiv-muted)] hover:text-[var(--ffxiv-highlight)] hover:bg-[var(--ffxiv-highlight)]/10'
         } ${className}`}
-        title={inList ? '從清單移除' : '加入查價'}
+        title={inList ? '從清單移除' : '加入追蹤'}
       >
         <svg className="w-3.5 h-3.5" fill={inList ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
         </svg>
-        {inList ? '已加入' : '加入查價'}
+        {inList ? '已加入' : '加入追蹤'}
       </button>
     );
   }
@@ -69,7 +69,7 @@ export function AddToPriceListButton({ itemId, variant = 'icon', className = '' 
       <svg className="w-4 h-4" fill={inList ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
       </svg>
-      {inList ? '已加入查價清單' : '加入查價清單'}
+      {inList ? '已加入追蹤清單' : '加入追蹤清單'}
     </button>
   );
 }
