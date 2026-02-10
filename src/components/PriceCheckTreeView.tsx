@@ -18,6 +18,11 @@ interface PriceCheckTreeViewProps {
   onOwnedClear: () => void;
   onQuantityChange: (itemId: number, quantity: number) => void;
   showOwned: boolean;
+  customPrices: Record<number, number>;
+  onCustomPriceChange: (itemId: number, price: number) => void;
+  onCustomPriceClear: (itemId: number) => void;
+  onCustomPricesClear: () => void;
+  showCustomPrices: boolean;
 }
 
 type MaterialStatus = 'green' | 'yellow' | 'red' | 'gray';
@@ -130,27 +135,33 @@ function collectMaterials(
 }
 
 /**
- * Get best price based on quality filter
+ * Get best price based on quality filter, with custom price override
  */
 function getBestPrice(
   mat: AggregatedMaterial,
-  qualityFilter: QualityFilter
-): { price: number | null; server: string; isHQ: boolean } {
+  qualityFilter: QualityFilter,
+  customPrices?: Record<number, number>
+): { price: number | null; server: string; isHQ: boolean; isCustom: boolean } {
+  // Check for custom price first
+  if (customPrices && customPrices[mat.item.id] !== undefined) {
+    return { price: customPrices[mat.item.id], server: '', isHQ: false, isCustom: true };
+  }
+
   if (qualityFilter === 'nq') {
-    return { price: mat.marketPriceNQ, server: mat.serverNQ, isHQ: false };
+    return { price: mat.marketPriceNQ, server: mat.serverNQ, isHQ: false, isCustom: false };
   } else if (qualityFilter === 'hq') {
-    return { price: mat.marketPriceHQ, server: mat.serverHQ, isHQ: true };
+    return { price: mat.marketPriceHQ, server: mat.serverHQ, isHQ: true, isCustom: false };
   } else {
     if (mat.marketPriceNQ !== null && mat.marketPriceHQ !== null) {
       if (mat.marketPriceHQ < mat.marketPriceNQ) {
-        return { price: mat.marketPriceHQ, server: mat.serverHQ, isHQ: true };
+        return { price: mat.marketPriceHQ, server: mat.serverHQ, isHQ: true, isCustom: false };
       }
-      return { price: mat.marketPriceNQ, server: mat.serverNQ, isHQ: false };
+      return { price: mat.marketPriceNQ, server: mat.serverNQ, isHQ: false, isCustom: false };
     }
     if (mat.marketPriceHQ !== null) {
-      return { price: mat.marketPriceHQ, server: mat.serverHQ, isHQ: true };
+      return { price: mat.marketPriceHQ, server: mat.serverHQ, isHQ: true, isCustom: false };
     }
-    return { price: mat.marketPriceNQ, server: mat.serverNQ, isHQ: false };
+    return { price: mat.marketPriceNQ, server: mat.serverNQ, isHQ: false, isCustom: false };
   }
 }
 
@@ -165,7 +176,7 @@ function getRarityClass(rarity: number): string {
   }
 }
 
-export function PriceCheckTreeView({ items, qualityFilter, onRemove, ownedMaterials, onOwnedChange, onOwnedClear, onQuantityChange, showOwned }: PriceCheckTreeViewProps) {
+export function PriceCheckTreeView({ items, qualityFilter, onRemove, ownedMaterials, onOwnedChange, onOwnedClear, onQuantityChange, showOwned, customPrices, onCustomPriceChange, onCustomPriceClear, onCustomPricesClear, showCustomPrices }: PriceCheckTreeViewProps) {
   const [showLines, setShowLines] = useState(false);
   const [selectedRootIds, setSelectedRootIds] = useState<Set<number>>(new Set());
   const containerRef = useRef<HTMLDivElement>(null);
@@ -498,6 +509,14 @@ export function PriceCheckTreeView({ items, qualityFilter, onRemove, ownedMateri
     <div className="relative" ref={containerRef} onClick={handleContainerClick}>
       {/* Toolbar */}
       <div className="flex items-center justify-end gap-4 mb-4" onClick={(e) => e.stopPropagation()}>
+        {showCustomPrices && (
+          <button
+            onClick={onCustomPricesClear}
+            className="text-sm text-[var(--ffxiv-muted)] hover:text-[var(--ffxiv-error)] transition-colors"
+          >
+            清除自訂價格
+          </button>
+        )}
         {showOwned && (
           <button
             onClick={onOwnedClear}
@@ -640,9 +659,31 @@ export function PriceCheckTreeView({ items, qualityFilter, onRemove, ownedMateri
                       />
                     </div>
                   )}
+                  {/* Custom price input */}
+                  {showCustomPrices && (
+                    <div className="flex items-center gap-1.5 mb-1" onClick={(e) => e.stopPropagation()}>
+                      <span className="text-xs text-[var(--ffxiv-muted)]">自訂:</span>
+                      <input
+                        type="number"
+                        min={0}
+                        value={customPrices[item.id] ?? ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === '' || val === undefined) {
+                            onCustomPriceClear(item.id);
+                          } else {
+                            onCustomPriceChange(item.id, Math.max(0, parseInt(val) || 0));
+                          }
+                        }}
+                        onFocus={(e) => e.target.select()}
+                        placeholder="市場價"
+                        className="w-20 bg-[var(--ffxiv-bg)] border border-[var(--ffxiv-border)] rounded px-1.5 py-0.5 text-xs text-right focus:outline-none focus:border-[var(--ffxiv-highlight)] placeholder:text-[var(--ffxiv-muted)]/40"
+                      />
+                    </div>
+                  )}
                   {itemData.totalBuyCostHQ > 0 && (
-                    <div className="text-xs text-yellow-400">
-                      直購HQ: {formatPrice(itemData.totalBuyCostHQ)} gil
+                    <div className={`text-xs ${customPrices[item.id] !== undefined ? 'text-orange-400' : 'text-yellow-400'}`}>
+                      {customPrices[item.id] !== undefined ? '自訂' : '直購HQ'}: {formatPrice(itemData.totalBuyCostHQ)} gil
                     </div>
                   )}
                   {itemData.totalCraftCost > 0 && (
@@ -713,7 +754,7 @@ export function PriceCheckTreeView({ items, qualityFilter, onRemove, ownedMateri
                 })}
                 {mats?.map((mat) => {
                   const iconUrl = getItemIconUrl(mat.item.icon);
-                  const bestPrice = getBestPrice(mat, qualityFilter);
+                  const bestPrice = getBestPrice(mat, qualityFilter, customPrices);
                   const totalCost = bestPrice.price !== null ? bestPrice.price * mat.totalQuantity : null;
                   const isHighlighted = selectedRootIds.size > 0 && selectedMaterialIds.has(mat.item.id);
                   const status = materialStatuses.get(mat.item.id) ?? 'red';
@@ -781,11 +822,32 @@ export function PriceCheckTreeView({ items, qualityFilter, onRemove, ownedMateri
                           />
                         </div>}
 
+                        {/* Custom price input */}
+                        {showCustomPrices && <div className="flex items-center gap-1.5 mb-2">
+                          <span className="text-xs text-[var(--ffxiv-muted)]">自訂:</span>
+                          <input
+                            type="number"
+                            min={0}
+                            value={customPrices[mat.item.id] ?? ''}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === '' || val === undefined) {
+                                onCustomPriceClear(mat.item.id);
+                              } else {
+                                onCustomPriceChange(mat.item.id, Math.max(0, parseInt(val) || 0));
+                              }
+                            }}
+                            onFocus={(e) => e.target.select()}
+                            placeholder="市場價"
+                            className="w-20 bg-[var(--ffxiv-bg)] border border-[var(--ffxiv-border)] rounded px-1.5 py-0.5 text-xs text-right focus:outline-none focus:border-[var(--ffxiv-highlight)] placeholder:text-[var(--ffxiv-muted)]/40"
+                          />
+                        </div>}
+
                         {/* Price info */}
                         <div className="text-xs space-y-0.5 mb-2">
                           {bestPrice.price !== null && (
-                            <div className={bestPrice.isHQ ? 'text-yellow-400' : 'text-green-400'}>
-                              {bestPrice.isHQ ? 'HQ' : 'NQ'}: {formatPrice(bestPrice.price)} gil
+                            <div className={bestPrice.isCustom ? 'text-orange-400' : bestPrice.isHQ ? 'text-yellow-400' : 'text-green-400'}>
+                              {bestPrice.isCustom ? '自訂' : bestPrice.isHQ ? 'HQ' : 'NQ'}: {formatPrice(bestPrice.price)} gil
                               {bestPrice.server && (
                                 <span className="text-[var(--ffxiv-muted)]"> @ {bestPrice.server}</span>
                               )}

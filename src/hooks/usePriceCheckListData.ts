@@ -224,10 +224,11 @@ function getCheapestBuyPrice(node: CraftingTreeNode): number | null {
 /**
  * Calculate costs for each node (bottom-up)
  * Always uses cheapest materials (NQ or HQ) for craft cost calculation
+ * Custom prices override market prices when set
  */
-function calculateCosts(node: CraftingTreeNode): void {
+function calculateCosts(node: CraftingTreeNode, customPrices: Record<number, number>): void {
   for (const child of node.children) {
-    calculateCosts(child);
+    calculateCosts(child, customPrices);
   }
 
   if (!node.recipe || node.children.length === 0) {
@@ -238,7 +239,8 @@ function calculateCosts(node: CraftingTreeNode): void {
   let craftCost = 0;
   for (const child of node.children) {
     const childCraftCost = child.craftCost;
-    const childBuyPrice = getCheapestBuyPrice(child);
+    const customPrice = customPrices[child.item.id];
+    const childBuyPrice = customPrice !== undefined ? customPrice : getCheapestBuyPrice(child);
     const childBuyCost = childBuyPrice !== null ? childBuyPrice * child.quantity : null;
 
     let cheapestChildCost: number | null = null;
@@ -269,13 +271,15 @@ function calculateCosts(node: CraftingTreeNode): void {
 /**
  * Calculate total costs for the root item
  * Compares: HQ buy price vs craft cost (using cheapest materials)
+ * Custom prices override market prices when set
  */
-function calculateTotals(tree: CraftingTreeNode): { craftCost: number; buyCostHQ: number } {
+function calculateTotals(tree: CraftingTreeNode, customPrices: Record<number, number>): { craftCost: number; buyCostHQ: number } {
   const craftCost = tree.craftCost ?? 0;
 
-  // Always use HQ price for buy comparison
-  const hqPrice = tree.marketPriceHQ;
-  const buyCostHQ = hqPrice !== null ? hqPrice * tree.quantity : 0;
+  // Use custom price if set, otherwise HQ price for buy comparison
+  const customPrice = customPrices[tree.item.id];
+  const buyPrice = customPrice !== undefined ? customPrice : tree.marketPriceHQ;
+  const buyCostHQ = buyPrice !== null ? buyPrice * tree.quantity : 0;
 
   return { craftCost, buyCostHQ };
 }
@@ -286,7 +290,8 @@ function calculateTotals(tree: CraftingTreeNode): { craftCost: number; buyCostHQ
 export function usePriceCheckListData(
   list: PriceCheckListItem[],
   showCrystals: boolean,
-  qualityFilter: QualityFilter
+  qualityFilter: QualityFilter,
+  customPrices: Record<number, number> = {}
 ): UsePriceCheckListDataReturn {
   const [prices, setPrices] = useState<Record<number, MarketData>>({});
   const [loading, setLoading] = useState(false);
@@ -359,8 +364,8 @@ export function usePriceCheckListData(
 
       if (tree) {
         applyPrices(tree, prices);
-        calculateCosts(tree);
-        const totals = calculateTotals(tree);
+        calculateCosts(tree, customPrices);
+        const totals = calculateTotals(tree, customPrices);
 
         return {
           listItem,
@@ -371,13 +376,18 @@ export function usePriceCheckListData(
         };
       }
 
-      // No tree - just get HQ market price for comparison
-      const priceData = prices[listItem.itemId];
+      // No tree - just get HQ market price (or custom price) for comparison
+      const customPrice = customPrices[listItem.itemId];
       let buyCostHQ = 0;
-      if (priceData) {
-        const hqResult = findCheapestHQ(priceData);
-        if (hqResult.price !== null) {
-          buyCostHQ = hqResult.price * listItem.quantity;
+      if (customPrice !== undefined) {
+        buyCostHQ = customPrice * listItem.quantity;
+      } else {
+        const priceData = prices[listItem.itemId];
+        if (priceData) {
+          const hqResult = findCheapestHQ(priceData);
+          if (hqResult.price !== null) {
+            buyCostHQ = hqResult.price * listItem.quantity;
+          }
         }
       }
 
@@ -389,7 +399,7 @@ export function usePriceCheckListData(
         totalBuyCostHQ: buyCostHQ,
       };
     });
-  }, [list, prices, showCrystals]);
+  }, [list, prices, showCrystals, customPrices]);
 
   // Calculate grand totals
   const grandTotals = useMemo(() => {

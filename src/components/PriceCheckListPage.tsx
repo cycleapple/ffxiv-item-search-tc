@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { usePriceCheckList } from '../hooks/usePriceCheckList';
 import { usePriceCheckListData, type QualityFilter } from '../hooks/usePriceCheckListData';
 import { useOwnedMaterials } from '../hooks/useOwnedMaterials';
+import { useCustomPrices } from '../hooks/useCustomPrices';
 import { PriceCheckListItemComponent } from './PriceCheckListItem';
 import { PriceCheckTreeView } from './PriceCheckTreeView';
 import type { ImportMode } from '../contexts/PriceCheckListContext';
@@ -15,8 +16,10 @@ export function PriceCheckListPage() {
   const navigate = useNavigate();
   const { list, removeItem, clearList, updateQuantity, importList } = usePriceCheckList();
   const { ownedMaterials, setOwned, clearAll: clearOwned } = useOwnedMaterials();
+  const { customPrices, setCustomPrice, clearCustomPrice, clearAll: clearCustomPrices } = useCustomPrices();
   const [showCrystals, setShowCrystals] = useState(false);
   const [showOwned, setShowOwned] = useState(false);
+  const [showCustomPrices, setShowCustomPrices] = useState(false);
   const [qualityFilter, setQualityFilter] = useState<QualityFilter>('both');
   const [viewMode, setViewMode] = useState<ViewMode>('tree');
   const [showExportModal, setShowExportModal] = useState(false);
@@ -109,7 +112,7 @@ export function PriceCheckListPage() {
     loading,
     error,
     refresh,
-  } = usePriceCheckListData(list, showCrystals, qualityFilter);
+  } = usePriceCheckListData(list, showCrystals, qualityFilter, customPrices);
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -237,6 +240,17 @@ export function PriceCheckListPage() {
               />
               <span className="text-[var(--ffxiv-muted)]">擁有數量</span>
             </label>
+
+            {/* Show custom prices toggle */}
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showCustomPrices}
+                onChange={(e) => setShowCustomPrices(e.target.checked)}
+                className="w-4 h-4 rounded border-[var(--ffxiv-border)] bg-[var(--ffxiv-card)] text-[var(--ffxiv-highlight)] focus:ring-[var(--ffxiv-highlight)]"
+              />
+              <span className="text-[var(--ffxiv-muted)]">自訂價格</span>
+            </label>
           </div>
 
           {/* Refresh button */}
@@ -293,6 +307,10 @@ export function PriceCheckListPage() {
                   showCrystals={showCrystals}
                   qualityFilter={qualityFilter}
                   onRemove={removeItem}
+                  customPrices={customPrices}
+                  onCustomPriceChange={setCustomPrice}
+                  onCustomPriceClear={clearCustomPrice}
+                  showCustomPrices={showCustomPrices}
                 />
               ))}
             </div>
@@ -306,6 +324,11 @@ export function PriceCheckListPage() {
               onOwnedClear={clearOwned}
               onQuantityChange={updateQuantity}
               showOwned={showOwned}
+              customPrices={customPrices}
+              onCustomPriceChange={setCustomPrice}
+              onCustomPriceClear={clearCustomPrice}
+              onCustomPricesClear={clearCustomPrices}
+              showCustomPrices={showCustomPrices}
             />
           )}
         </>

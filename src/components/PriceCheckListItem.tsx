@@ -14,6 +14,10 @@ interface PriceCheckListItemProps {
   showCrystals: boolean;
   qualityFilter: QualityFilter;
   onRemove: (itemId: number) => void;
+  customPrices: Record<number, number>;
+  onCustomPriceChange: (itemId: number, price: number) => void;
+  onCustomPriceClear: (itemId: number) => void;
+  showCustomPrices: boolean;
 }
 
 function getRarityClass(rarity: number): string {
@@ -38,6 +42,10 @@ export function PriceCheckListItemComponent({
   showCrystals,
   qualityFilter,
   onRemove,
+  customPrices,
+  onCustomPriceChange,
+  onCustomPriceClear,
+  showCustomPrices,
 }: PriceCheckListItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -112,11 +120,34 @@ export function PriceCheckListItemComponent({
               )}
             </div>
 
+            {/* Custom price input */}
+            {showCustomPrices && item && (
+              <div className="flex items-center gap-1.5 mt-2">
+                <span className="text-xs text-[var(--ffxiv-muted)]">自訂:</span>
+                <input
+                  type="number"
+                  min={0}
+                  value={customPrices[item.id] ?? ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '' || val === undefined) {
+                      onCustomPriceClear(item.id);
+                    } else {
+                      onCustomPriceChange(item.id, Math.max(0, parseInt(val) || 0));
+                    }
+                  }}
+                  onFocus={(e) => e.target.select()}
+                  placeholder="市場價"
+                  className="w-24 bg-[var(--ffxiv-bg)] border border-[var(--ffxiv-border)] rounded px-1.5 py-0.5 text-xs text-right focus:outline-none focus:border-[var(--ffxiv-highlight)] placeholder:text-[var(--ffxiv-muted)]/40"
+                />
+              </div>
+            )}
+
             {/* Price info */}
             <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-sm">
               {totalBuyCostHQ > 0 && (
-                <div className="text-yellow-400">
-                  直購HQ: {formatPrice(totalBuyCostHQ)} gil
+                <div className={item && customPrices[item.id] !== undefined ? 'text-orange-400' : 'text-yellow-400'}>
+                  {item && customPrices[item.id] !== undefined ? '自訂' : '直購HQ'}: {formatPrice(totalBuyCostHQ)} gil
                 </div>
               )}
               {totalCraftCost > 0 && (
