@@ -252,7 +252,7 @@ export function GatheringView({ points }: GatheringViewProps) {
             {/* Map and details */}
             <div className="flex flex-col md:flex-row">
               {/* Map */}
-              <div className="relative w-full md:w-64 h-64 bg-[var(--ffxiv-bg-tertiary)] flex-shrink-0">
+              <div className="relative w-64 h-64 bg-[var(--ffxiv-bg-tertiary)] flex-shrink-0 mx-auto md:mx-0">
                 {loading ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="animate-spin rounded-full h-8 w-8 border-2 border-[var(--ffxiv-border)] border-t-[var(--ffxiv-accent)]"></div>
