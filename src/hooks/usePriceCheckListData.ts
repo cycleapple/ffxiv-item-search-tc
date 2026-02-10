@@ -68,10 +68,14 @@ function buildTreeStructure(
   };
 
   if (recipe) {
+    const numCrafts = recipe.resultAmount > 1
+      ? Math.ceil(quantity / recipe.resultAmount)
+      : quantity;
+
     for (const ingredient of recipe.ingredients) {
       const childNode = buildTreeStructure(
         ingredient.itemId,
-        ingredient.amount * quantity,
+        ingredient.amount * numCrafts,
         newVisited,
         depth + 1,
         showCrystals
@@ -259,10 +263,6 @@ function calculateCosts(node: CraftingTreeNode, customPrices: Record<number, num
     }
 
     craftCost += cheapestChildCost;
-  }
-
-  if (node.recipe.resultAmount > 1) {
-    craftCost = craftCost / node.recipe.resultAmount * node.quantity;
   }
 
   node.craftCost = Math.ceil(craftCost);
