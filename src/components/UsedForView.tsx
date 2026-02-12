@@ -2,7 +2,7 @@
 import type { Recipe } from '../types';
 import { getItemById } from '../services/searchService';
 import { getItemIconUrl } from '../services/xivapiService';
-import { getDesynthResults, getTradesForCurrency } from '../hooks/useItemData';
+import { getDesynthResults, getTradesForCurrency, getGCSupplyInfo } from '../hooks/useItemData';
 import { CopyButton } from './CopyButton';
 import { ItemLink } from './ItemLink';
 
@@ -15,6 +15,7 @@ interface UsedForViewProps {
 const XIVAPI_ICONS = {
   desynth: 'https://xivapi.com/i/000000/000120.png',
   trade: 'https://xivapi.com/i/060000/060412.png',
+  gcSeals: 'https://xivapi.com/i/065000/065005.png',
 };
 
 // Job icons (local files in public/icons/jobs/)
@@ -48,7 +49,10 @@ export function UsedForView({ itemId, recipes }: UsedForViewProps) {
   // Get items that can be purchased with this currency
   const trades = getTradesForCurrency(itemId);
 
-  if (recipes.length === 0 && desynthResults.length === 0 && trades.length === 0) {
+  // Get GC supply/provisioning info
+  const gcSupply = getGCSupplyInfo(itemId);
+
+  if (recipes.length === 0 && desynthResults.length === 0 && trades.length === 0 && !gcSupply) {
     return (
       <div className="text-center py-8 text-[var(--ffxiv-muted)]">
         <div className="text-4xl mb-3">📦</div>
@@ -298,6 +302,30 @@ export function UsedForView({ itemId, recipes }: UsedForViewProps) {
                 ...還有 {trades.length - 50} 個物品
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* GC Supply & Provisioning */}
+      {gcSupply && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-sm font-medium text-[var(--ffxiv-muted)]">
+            <img src={XIVAPI_ICONS.gcSeals} alt="軍需品籌備" className="w-5 h-5" />
+            <span>軍需品籌備</span>
+          </div>
+
+          <div className="p-3 bg-[var(--ffxiv-bg)] rounded-lg border border-[var(--ffxiv-accent)]">
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-[var(--ffxiv-muted)]">EXP:</span>
+                <span className="text-sm text-[var(--ffxiv-highlight)]">{gcSupply.exp.toLocaleString()}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <img src={XIVAPI_ICONS.gcSeals} alt="軍票" className="w-4 h-4" />
+                <span className="text-xs text-[var(--ffxiv-muted)]">軍票:</span>
+                <span className="text-sm text-[var(--ffxiv-highlight)]">x{gcSupply.seals.toLocaleString()}</span>
+              </div>
+            </div>
           </div>
         </div>
       )}

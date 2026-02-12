@@ -65,6 +65,14 @@ let globalSourcesData: SourcesData = {
 // Desynth results (what items you get by desynthing)
 let globalDesynthResults: Record<number, number[]> = {};
 
+// GC Supply & Provisioning info
+export interface GCSupplyInfo {
+  type: 'supply' | 'provisioning';
+  exp: number;
+  seals: number;
+}
+let globalGCSupply: Record<number, GCSupplyInfo> = {};
+
 // Trades (what items you can buy with this currency item)
 interface TradeCurrency {
   id: number;
@@ -205,12 +213,13 @@ async function loadAllData(): Promise<void> {
 
 async function loadSecondaryData(): Promise<void> {
   try {
-    const [recipesResponse, gatheringResponse, sourcesResponse, desynthResultsResponse, tradesResponse] = await Promise.all([
+    const [recipesResponse, gatheringResponse, sourcesResponse, desynthResultsResponse, tradesResponse, gcSupplyResponse] = await Promise.all([
       fetch(`${import.meta.env.BASE_URL}data/recipes.json`),
       fetch(`${import.meta.env.BASE_URL}data/gathering.json`),
       fetch(`${import.meta.env.BASE_URL}data/sources.json`),
       fetch(`${import.meta.env.BASE_URL}data/desynth-results.json`),
       fetch(`${import.meta.env.BASE_URL}data/trades.json`),
+      fetch(`${import.meta.env.BASE_URL}data/gc-supply.json`),
     ]);
 
     if (recipesResponse.ok) {
@@ -256,6 +265,10 @@ async function loadSecondaryData(): Promise<void> {
 
     if (tradesResponse.ok) {
       globalTrades = await tradesResponse.json();
+    }
+
+    if (gcSupplyResponse.ok) {
+      globalGCSupply = await gcSupplyResponse.json();
     }
   } catch (error) {
     console.error('Failed to load secondary data:', error);
@@ -398,6 +411,13 @@ export function getDesynthResults(itemId: number): number[] {
  */
 export function getTradesForCurrency(itemId: number): TradeItem[] {
   return globalTrades[itemId] || [];
+}
+
+/**
+ * Get GC supply/provisioning info for an item
+ */
+export function getGCSupplyInfo(itemId: number): GCSupplyInfo | null {
+  return globalGCSupply[itemId] || null;
 }
 
 export type { TradeItem, TradeCurrency };

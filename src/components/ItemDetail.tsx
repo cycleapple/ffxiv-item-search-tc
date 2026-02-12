@@ -1,6 +1,6 @@
 // Item detail page component
 import { useParams, useNavigate } from 'react-router-dom';
-import { useItemData, useRecipeData, useGatheringData, useSourcesData, getRecipesUsingItem, ensureFullItemData } from '../hooks/useItemData';
+import { useItemData, useRecipeData, useGatheringData, useSourcesData, getRecipesUsingItem, ensureFullItemData, getGCSupplyInfo } from '../hooks/useItemData';
 import { getItemById, getMultilingualNames } from '../services/searchService';
 import { getItemIconUrl } from '../services/xivapiService';
 import { ObtainView } from './ObtainView';
@@ -311,7 +311,7 @@ export function ItemDetailContent({ itemId, onClose, isPanel }: ItemDetailConten
           if (tab.id === 'obtain') count = obtainCount;
           else if (tab.id === 'recipe') count = recipes.length;
           else if (tab.id === 'gathering') count = gatheringPoints.length;
-          else if (tab.id === 'usedfor') count = usedForRecipes.length;
+          else if (tab.id === 'usedfor') count = usedForRecipes.length + (getGCSupplyInfo(itemId) ? 1 : 0);
 
           return (
             <button

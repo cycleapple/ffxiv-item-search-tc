@@ -1670,6 +1670,51 @@ async function processSources() {
     writeFileSync(join(OUTPUT_PATH, 'desynth-results.json'), JSON.stringify({ results: desynthResults }));
     console.log(`Saved ${Object.keys(desynthResults).length} desynth result entries`);
   }
+
+  // Process GC Supply & Provisioning data
+  console.log('Processing GC Supply data...');
+  const gcSupplyDuty = await parseCSV(join(DATA_REPO_PATH, 'csv', 'GCSupplyDuty.csv'));
+  const gcSupplyReward = await parseCSV(join(DATA_REPO_PATH, 'csv', 'GCSupplyDutyReward.csv'));
+
+  // Build tier → rewards lookup from GCSupplyDutyReward
+  const rewardByTier = {};
+  for (const row of gcSupplyReward) {
+    const tier = parseInt(row['#']);
+    if (isNaN(tier)) continue;
+    rewardByTier[tier] = {
+      expSupply: parseInt(row['Experience{Supply}']) || 0,
+      expProvisioning: parseInt(row['Experience{Provisioning}']) || 0,
+      sealsSupply: parseInt(row['Seals{Supply}']) || 0,
+      sealsProvisioning: parseInt(row['Seals{Provisioning}']) || 0,
+    };
+  }
+
+  // Build itemId → GC supply info from GCSupplyDuty
+  const gcSupplyOutput = {};
+  for (const row of gcSupplyDuty) {
+    const tier = parseInt(row['#']);
+    if (isNaN(tier)) continue;
+    const reward = rewardByTier[tier];
+    if (!reward) continue;
+
+    // Classes 0-10: 0-7 = crafters (supply), 8-10 = gatherers (provisioning)
+    for (let classIdx = 0; classIdx <= 10; classIdx++) {
+      const isProvisioning = classIdx >= 8;
+      const type = isProvisioning ? 'provisioning' : 'supply';
+      const exp = isProvisioning ? reward.expProvisioning : reward.expSupply;
+      const seals = isProvisioning ? reward.sealsProvisioning : reward.sealsSupply;
+
+      // Each class has 3 item slots (slot 0-2)
+      for (let slot = 0; slot <= 2; slot++) {
+        const itemId = parseInt(row[`Item[${slot}][${classIdx}]`]);
+        if (!itemId || isNaN(itemId)) continue;
+        gcSupplyOutput[itemId] = { type, exp, seals };
+      }
+    }
+  }
+
+  writeFileSync(join(OUTPUT_PATH, 'gc-supply.json'), JSON.stringify(gcSupplyOutput));
+  console.log(`Saved ${Object.keys(gcSupplyOutput).length} GC supply entries`);
 }
 
 /**
