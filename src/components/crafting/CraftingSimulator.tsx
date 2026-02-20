@@ -151,10 +151,8 @@ export function CraftingSimulator() {
 
         const craftingRecipe = convertRecipe(recipe, recipeLevel);
         // Use effective stats (with consumable bonuses applied)
-        // Ensure player level is at least as high as recipe requirement
-        const requiredLevel = craftingRecipe.job_level || recipeLevel.class_job_level || 1;
         const crafterAttrs = {
-          level: Math.max(stats.level || 100, requiredLevel),
+          level: stats.level || 100,
           craftsmanship: effectiveStats.craftsmanship || 0,
           control: effectiveStats.control || 0,
           craft_points: effectiveStats.craft_points || 0,
