@@ -15,6 +15,7 @@ interface CraftingPriceTreeProps {
 type ViewMode = 'tree' | 'flat';
 
 export function CraftingPriceTree({ itemId }: CraftingPriceTreeProps) {
+  const [quantity, setQuantity] = useState(1);
   const [showCrystals, setShowCrystals] = useState(false);
   const [qualityFilter, setQualityFilter] = useState<QualityFilter>('both');
   const [viewMode, setViewMode] = useState<ViewMode>('flat');
@@ -68,7 +69,8 @@ export function CraftingPriceTree({ itemId }: CraftingPriceTreeProps) {
   const { tree, loading, error, totalCraftCost, totalBuyCostHQ, refresh } = useCraftingTree(
     itemId,
     true,
-    qualityFilter
+    qualityFilter,
+    quantity
   );
 
   // Calculate savings (HQ buy vs cheapest craft)
@@ -76,6 +78,19 @@ export function CraftingPriceTree({ itemId }: CraftingPriceTreeProps) {
 
   return (
     <div className="bg-[var(--ffxiv-bg)] rounded-lg p-4 border border-[var(--ffxiv-accent)]">
+      {/* Quantity input */}
+      <div className="flex items-center gap-2 mb-4">
+        <span className="text-sm text-[var(--ffxiv-muted)]">製作數量:</span>
+        <input
+          type="number"
+          min={1}
+          value={quantity}
+          onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+          onFocus={(e) => e.target.select()}
+          className="w-20 bg-[var(--ffxiv-card)] border border-[var(--ffxiv-accent)] rounded px-2 py-1 text-sm text-right focus:outline-none focus:border-[var(--ffxiv-highlight)]"
+        />
+      </div>
+
       {/* Header controls */}
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <div className="flex items-center gap-4 flex-wrap">

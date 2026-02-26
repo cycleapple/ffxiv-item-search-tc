@@ -285,7 +285,8 @@ function calculateTotals(tree: CraftingTreeNode): { craftCost: number; buyCostHQ
 export function useCraftingTree(
   itemId: number | null,
   showCrystals: boolean,
-  qualityFilter: QualityFilter = 'both'
+  qualityFilter: QualityFilter = 'both',
+  quantity: number = 1
 ): UseCraftingTreeReturn {
   const [tree, setTree] = useState<CraftingTreeNode | null>(null);
   const [loading, setLoading] = useState(false);
@@ -310,7 +311,7 @@ export function useCraftingTree(
       setError(null);
 
       try {
-        const rootTree = buildTreeStructure(currentItemId, 1, new Set(), 0, showCrystals);
+        const rootTree = buildTreeStructure(currentItemId, quantity, new Set(), 0, showCrystals);
 
         if (!rootTree) {
           setError('無法建立製作樹');
@@ -345,7 +346,7 @@ export function useCraftingTree(
     return () => {
       cancelled = true;
     };
-  }, [itemId, showCrystals, qualityFilter, refreshTrigger]);
+  }, [itemId, showCrystals, qualityFilter, quantity, refreshTrigger]);
 
   const totals = useMemo(() => {
     if (!tree) return { craftCost: 0, buyCostHQ: 0 };
