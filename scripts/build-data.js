@@ -1410,7 +1410,9 @@ async function processSources() {
     // (same Content ID can exist for dungeons, chocobo racing, etc.)
     const tcContentFinder = await parseCSV(join(DATA_REPO_PATH, 'csv', 'ContentFinderCondition.csv'));
     const tcInstanceNameMap = new Map(); // "ContentType-Content" -> TC name
+    const cfcKeyToNameMap = new Map(); // CFC row key -> { name, contentType }
     tcContentFinder.forEach((cfc) => {
+      const cfcKey = parseInt(cfc['#'] || cfc.key || '0');
       const contentId = parseInt(cfc['Content'] || '0');
       const contentType = parseInt(cfc['ContentType'] || '0');
       const name = cfc['Name'] || '';
@@ -1419,8 +1421,13 @@ async function processSources() {
         const key = `${contentType}-${contentId}`;
         tcInstanceNameMap.set(key, name);
       }
+      // Also build CFC row key -> name map for negative instanceSources IDs
+      if (cfcKey > 0 && name) {
+        cfcKeyToNameMap.set(cfcKey, { name, contentType });
+      }
     });
     console.log(`Loaded ${tcInstanceNameMap.size} TC instance names from local CSV (by ContentType-Content)`);
+    console.log(`Loaded ${cfcKeyToNameMap.size} CFC row key -> name mappings`);
 
     // Load English instance names from xivapi datamining repo
     // Build EN name -> TC name mapping for fallback when compound key doesn't match
@@ -1481,6 +1488,35 @@ async function processSources() {
           instanceNames.push(instance.en);
           return;
         }
+
+        // Fallback for negative IDs: treat absId as CFC row key
+        // Negative IDs in Teamcraft instanceSources reference CFC row keys
+        // for non-InstanceContent entries (Eureka, Bozjan, quest battles, etc.)
+        if (instanceId < 0) {
+          // Override table for known incorrect Teamcraft CFC key mappings
+          // -641 incorrectly maps to CFC 641 (Air Force One / Gold Saucer)
+          // These items actually drop from Save the Queen content (Delubrum Reginae)
+          const cfcKeyOverrides = {
+            641: 760,  // Air Force One → 女王古殿 (Delubrum Reginae)
+          };
+          const correctedId = cfcKeyOverrides[absId] || absId;
+          const cfcEntry = cfcKeyToNameMap.get(correctedId);
+          if (cfcEntry && cfcEntry.name) {
+            // Filter out content types that don't make sense as instance sources:
+            // 0=unknown, 19=GoldSaucer, 27=Squadron
+            const invalidCTs = [0, 19, 27];
+            if (!invalidCTs.includes(cfcEntry.contentType)) {
+              if (cfcEntry.contentType && !instanceContentTypes.includes(cfcEntry.contentType)) {
+                instanceContentTypes.push(cfcEntry.contentType);
+              }
+              instanceNames.push(cfcEntry.name);
+              return;
+            }
+          }
+          // Skip unresolvable negative IDs entirely (don't show "副本 #ID")
+          return;
+        }
+
         instanceNames.push(`副本 #${absId}`);
       });
 
