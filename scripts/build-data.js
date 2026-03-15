@@ -142,6 +142,9 @@ const __dirname = dirname(__filename);
 const DATA_REPO_PATH = process.env.DATA_REPO_PATH || join(__dirname, '..', '..', 'ffxiv-datamining-tc');
 const OUTPUT_PATH = join(__dirname, '..', 'public', 'data');
 
+// Determine the CSV base directory: support both csv/ subdirectory and root-level CSVs
+const CSV_BASE = existsSync(join(DATA_REPO_PATH, 'csv')) ? join(DATA_REPO_PATH, 'csv') : DATA_REPO_PATH;
+
 // Temporary storage for items-index (populated by processItems, finalized after processMultilingualNames)
 let globalIndexFields = [];
 let globalIndexItems = [];
@@ -201,15 +204,15 @@ async function parseCSV(filePath) {
 async function processItems() {
   console.log('Processing items...');
 
-  const items = await parseCSV(join(DATA_REPO_PATH, 'csv', 'Item.csv'));
-  const categories = await parseCSV(join(DATA_REPO_PATH, 'csv', 'ItemUICategory.csv'));
-  const recipes = await parseCSV(join(DATA_REPO_PATH, 'csv', 'Recipe.csv'));
-  const gatheringItems = await parseCSV(join(DATA_REPO_PATH, 'csv', 'GatheringItem.csv'));
-  const baseParams = await parseCSV(join(DATA_REPO_PATH, 'csv', 'BaseParam.csv'));
-  const classJobs = await parseCSV(join(DATA_REPO_PATH, 'csv', 'ClassJob.csv'));
-  const classJobCategories = await parseCSV(join(DATA_REPO_PATH, 'csv', 'ClassJobCategory.csv'));
-  const itemActions = await parseCSV(join(DATA_REPO_PATH, 'csv', 'ItemAction.csv'));
-  const itemFoods = await parseCSV(join(DATA_REPO_PATH, 'csv', 'ItemFood.csv'));
+  const items = await parseCSV(join(CSV_BASE, 'Item.csv'));
+  const categories = await parseCSV(join(CSV_BASE, 'ItemUICategory.csv'));
+  const recipes = await parseCSV(join(CSV_BASE, 'Recipe.csv'));
+  const gatheringItems = await parseCSV(join(CSV_BASE, 'GatheringItem.csv'));
+  const baseParams = await parseCSV(join(CSV_BASE, 'BaseParam.csv'));
+  const classJobs = await parseCSV(join(CSV_BASE, 'ClassJob.csv'));
+  const classJobCategories = await parseCSV(join(CSV_BASE, 'ClassJobCategory.csv'));
+  const itemActions = await parseCSV(join(CSV_BASE, 'ItemAction.csv'));
+  const itemFoods = await parseCSV(join(CSV_BASE, 'ItemFood.csv'));
 
   // Fetch patch data from Teamcraft
   console.log('Fetching patch data...');
@@ -552,10 +555,10 @@ async function processItems() {
 async function processRecipes() {
   console.log('Processing recipes...');
 
-  const recipes = await parseCSV(join(DATA_REPO_PATH, 'csv', 'Recipe.csv'));
-  const craftTypes = await parseCSV(join(DATA_REPO_PATH, 'csv', 'CraftType.csv'));
-  const recipeLevelTable = await parseCSV(join(DATA_REPO_PATH, 'csv', 'RecipeLevelTable.csv'));
-  const secretRecipeBooks = await parseCSV(join(DATA_REPO_PATH, 'csv', 'SecretRecipeBook.csv'));
+  const recipes = await parseCSV(join(CSV_BASE, 'Recipe.csv'));
+  const craftTypes = await parseCSV(join(CSV_BASE, 'CraftType.csv'));
+  const recipeLevelTable = await parseCSV(join(CSV_BASE, 'RecipeLevelTable.csv'));
+  const secretRecipeBooks = await parseCSV(join(CSV_BASE, 'SecretRecipeBook.csv'));
 
   // Build craft type map
   const craftTypeMap = new Map();
@@ -694,8 +697,8 @@ async function processGathering() {
   ]);
 
   // Load gathering types and place names from local CSV (Traditional Chinese)
-  const gatheringTypes = await parseCSV(join(DATA_REPO_PATH, 'csv', 'GatheringType.csv'));
-  const placeNames = await parseCSV(join(DATA_REPO_PATH, 'csv', 'PlaceName.csv'));
+  const gatheringTypes = await parseCSV(join(CSV_BASE, 'GatheringType.csv'));
+  const placeNames = await parseCSV(join(CSV_BASE, 'PlaceName.csv'));
 
   // Build local place name map (Traditional Chinese)
   const localPlaceNameMap = new Map();
@@ -804,11 +807,11 @@ async function processSources() {
   console.log('Processing item sources...');
 
   // Load CSV source data
-  const gilShopItems = await parseCSV(join(DATA_REPO_PATH, 'csv', 'GilShopItem.csv'));
-  const gcScripShopItems = await parseCSV(join(DATA_REPO_PATH, 'csv', 'GCScripShopItem.csv'));
-  const specialShop = await parseCSV(join(DATA_REPO_PATH, 'csv', 'SpecialShop.csv'));
-  const items = await parseCSV(join(DATA_REPO_PATH, 'csv', 'Item.csv'));
-  const bnpcNames = await parseCSV(join(DATA_REPO_PATH, 'csv', 'BNpcName.csv'));
+  const gilShopItems = await parseCSV(join(CSV_BASE, 'GilShopItem.csv'));
+  const gcScripShopItems = await parseCSV(join(CSV_BASE, 'GCScripShopItem.csv'));
+  const specialShop = await parseCSV(join(CSV_BASE, 'SpecialShop.csv'));
+  const items = await parseCSV(join(CSV_BASE, 'Item.csv'));
+  const bnpcNames = await parseCSV(join(CSV_BASE, 'BNpcName.csv'));
 
   // Fetch Teamcraft data for drops and other sources
   console.log('Fetching Teamcraft data...');
@@ -928,8 +931,8 @@ async function processSources() {
     console.log('Processing venture and voyage data from extracts...');
 
     // Load submarine and airship exploration data for Traditional Chinese names
-    const submarineExploration = await parseCSV(join(DATA_REPO_PATH, 'csv', 'SubmarineExploration.csv'));
-    const airshipExploration = await parseCSV(join(DATA_REPO_PATH, 'csv', 'AirshipExplorationPoint.csv'));
+    const submarineExploration = await parseCSV(join(CSV_BASE, 'SubmarineExploration.csv'));
+    const airshipExploration = await parseCSV(join(CSV_BASE, 'AirshipExplorationPoint.csv'));
 
     // Build submarine destination name map (ID -> Chinese name)
     const submarineNameMap = new Map();
@@ -1070,7 +1073,7 @@ async function processSources() {
     console.log('Processing vendor data from extracts...');
 
     // Load TC NPC names
-    const tcNpcNames = await parseCSV(join(DATA_REPO_PATH, 'csv', 'ENpcResident.csv'));
+    const tcNpcNames = await parseCSV(join(CSV_BASE, 'ENpcResident.csv'));
     const npcNameMap = new Map();
     tcNpcNames.forEach((npc) => {
       const id = parseInt(npc['#'] || npc.key || '0');
@@ -1082,7 +1085,7 @@ async function processSources() {
     console.log(`Loaded ${npcNameMap.size} TC NPC names`);
 
     // Load TC Place names
-    const tcPlaceNames = await parseCSV(join(DATA_REPO_PATH, 'csv', 'PlaceName.csv'));
+    const tcPlaceNames = await parseCSV(join(CSV_BASE, 'PlaceName.csv'));
     const placeNameMap = new Map();
     tcPlaceNames.forEach((place) => {
       const id = parseInt(place['#'] || place.key || '0');
@@ -1408,7 +1411,7 @@ async function processSources() {
     // Load Traditional Chinese instance names from ContentFinderCondition.csv
     // Map by ContentType + Content combination since Content alone is not unique
     // (same Content ID can exist for dungeons, chocobo racing, etc.)
-    const tcContentFinder = await parseCSV(join(DATA_REPO_PATH, 'csv', 'ContentFinderCondition.csv'));
+    const tcContentFinder = await parseCSV(join(CSV_BASE, 'ContentFinderCondition.csv'));
     const tcInstanceNameMap = new Map(); // "ContentType-Content" -> TC name
     const cfcKeyToNameMap = new Map(); // CFC row key -> { name, contentType }
     tcContentFinder.forEach((cfc) => {
@@ -1593,7 +1596,7 @@ async function processSources() {
     console.log('Processing quest reward data...');
 
     // Load TC quest names from Quest.csv
-    const tcQuests = await parseCSV(join(DATA_REPO_PATH, 'csv', 'Quest.csv'));
+    const tcQuests = await parseCSV(join(CSV_BASE, 'Quest.csv'));
     const tcQuestNameMap = new Map(); // questId -> TC name
     tcQuests.forEach((q) => {
       const id = parseInt(q['#'] || q.key || '0');
@@ -1709,8 +1712,8 @@ async function processSources() {
 
   // Process GC Supply & Provisioning data
   console.log('Processing GC Supply data...');
-  const gcSupplyDuty = await parseCSV(join(DATA_REPO_PATH, 'csv', 'GCSupplyDuty.csv'));
-  const gcSupplyReward = await parseCSV(join(DATA_REPO_PATH, 'csv', 'GCSupplyDutyReward.csv'));
+  const gcSupplyDuty = await parseCSV(join(CSV_BASE, 'GCSupplyDuty.csv'));
+  const gcSupplyReward = await parseCSV(join(CSV_BASE, 'GCSupplyDutyReward.csv'));
 
   // Build tier → rewards lookup from GCSupplyDutyReward
   const rewardByTier = {};
@@ -1761,11 +1764,11 @@ async function processMapData() {
   console.log('Processing map data...');
 
   // Load Map.csv
-  const mapData = await parseCSV(join(DATA_REPO_PATH, 'csv', 'Map.csv'));
+  const mapData = await parseCSV(join(CSV_BASE, 'Map.csv'));
   console.log(`Loaded ${mapData.length} map entries`);
 
   // Load PlaceName.csv for TC names
-  const placeNames = await parseCSV(join(DATA_REPO_PATH, 'csv', 'PlaceName.csv'));
+  const placeNames = await parseCSV(join(CSV_BASE, 'PlaceName.csv'));
   const placeNameMap = new Map();
   placeNames.forEach((place) => {
     const id = parseInt(place['#'] || place.key || 0);
@@ -1921,7 +1924,7 @@ async function processInstanceCNNames() {
 
   try {
     // Load TC ContentFinderCondition.csv locally to get ID -> TC name
-    const tcContentFinder = await parseCSV(join(DATA_REPO_PATH, 'csv', 'ContentFinderCondition.csv'));
+    const tcContentFinder = await parseCSV(join(CSV_BASE, 'ContentFinderCondition.csv'));
     const idToTcName = new Map();
     tcContentFinder.forEach((cfc) => {
       const id = parseInt(cfc['#'] || cfc.key || '0');
@@ -2212,7 +2215,7 @@ async function processMobPositions() {
   }
 
   // Load TC place names
-  const placeNames = await parseCSV(join(DATA_REPO_PATH, 'csv', 'PlaceName.csv'));
+  const placeNames = await parseCSV(join(CSV_BASE, 'PlaceName.csv'));
   const placeNameMap = new Map();
   placeNames.forEach((pn) => {
     const id = parseInt(pn['#'] || pn.key || '0');
@@ -2329,7 +2332,7 @@ async function main() {
   console.log(`Output path: ${OUTPUT_PATH}`);
   console.log('');
 
-  if (!existsSync(join(DATA_REPO_PATH, 'csv'))) {
+  if (!existsSync(join(CSV_BASE, 'Item.csv'))) {
     console.error('Error: ffxiv-datamining-tc repository not found!');
     console.error('Please clone it or set DATA_REPO_PATH environment variable.');
     console.error('');
