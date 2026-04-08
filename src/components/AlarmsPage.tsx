@@ -34,13 +34,39 @@ interface AlarmWithInfo {
   bestSpawn: SpawnInfo;
 }
 
+const COLLAPSED_STORAGE_KEY = 'ffxiv-gathering-alarms-collapsed';
+
+function loadCollapsed(): Set<string> {
+  try {
+    const saved = localStorage.getItem(COLLAPSED_STORAGE_KEY);
+    if (saved) return new Set(JSON.parse(saved) as string[]);
+  } catch { /* ignore */ }
+  return new Set();
+}
+
 export function AlarmsPage() {
   const { alarms, groups, toggleGroup, createGroup, deleteGroup, renameGroup, removeAlarm, moveAlarm } = useAlarms();
   const [tick, setTick] = useState(0);
   const [newGroupName, setNewGroupName] = useState('');
   const [editingGroup, setEditingGroup] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(loadCollapsed);
   const [mapNameById, setMapNameById] = useState<Record<number, string>>({});
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(COLLAPSED_STORAGE_KEY, JSON.stringify(Array.from(collapsedGroups)));
+    } catch { /* ignore */ }
+  }, [collapsedGroups]);
+
+  const toggleCollapsed = (groupId: string) => {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(groupId)) next.delete(groupId);
+      else next.add(groupId);
+      return next;
+    });
+  };
   const [mapModal, setMapModal] = useState<{
     isOpen: boolean;
     zoneName: string;
@@ -103,101 +129,124 @@ export function AlarmsPage() {
         </span>
       </div>
 
-      {/* Groups management */}
-      <div className="space-y-3">
-        <h3 className="text-sm font-medium text-[var(--ffxiv-muted)]">群組管理</h3>
-        <div className="space-y-2">
-          {groups.map(group => (
-            <div
-              key={group.id}
-              className="flex items-center gap-3 px-3 py-2 bg-[var(--ffxiv-card)] rounded border border-[var(--ffxiv-border)]"
-            >
-              <button
-                onClick={() => toggleGroup(group.id)}
-                className="flex-shrink-0"
-                title={group.enabled ? '點擊靜音' : '點擊啟用'}
-              >
-                {group.enabled ? (
-                  <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707A1 1 0 0112 5.586v12.828a1 1 0 01-1.707.707L5.586 15z" />
-                  </svg>
-                ) : (
-                  <svg className="w-5 h-5 text-[var(--ffxiv-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707A1 1 0 0112 5.586v12.828a1 1 0 01-1.707.707L5.586 15z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
-                  </svg>
-                )}
-              </button>
-              {editingGroup === group.id ? (
-                <input
-                  className="flex-1 bg-transparent border-b border-[var(--ffxiv-accent)] text-sm outline-none"
-                  value={editName}
-                  onChange={e => setEditName(e.target.value)}
-                  onBlur={() => handleRename(group.id)}
-                  onKeyDown={e => { if (e.key === 'Enter') handleRename(group.id); if (e.key === 'Escape') setEditingGroup(null); }}
-                  autoFocus
-                />
-              ) : (
-                <span className="flex-1 text-sm">{group.name}</span>
-              )}
-              <span className="text-xs text-[var(--ffxiv-muted)]">
-                {alarms.filter(a => a.groupId === group.id).length} 個鬧鐘
-              </span>
-              {editingGroup !== group.id && (
-                <button
-                  onClick={() => startRename(group.id, group.name)}
-                  className="p-1 text-[var(--ffxiv-muted)] hover:text-[var(--ffxiv-accent)] transition-colors"
-                  title="重新命名"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                  </svg>
-                </button>
-              )}
-              {group.id !== 'default' && (
-                <button
-                  onClick={() => deleteGroup(group.id)}
-                  className="p-1 text-[var(--ffxiv-muted)] hover:text-red-400 transition-colors"
-                  title="刪除群組（鬧鐘將移至預設）"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
-        <div className="flex gap-2">
-          <input
-            className="px-2 py-1 text-sm bg-[var(--ffxiv-bg)] border border-[var(--ffxiv-border)] rounded outline-none focus:border-[var(--ffxiv-accent)]"
-            placeholder="新群組名稱"
-            value={newGroupName}
-            onChange={e => setNewGroupName(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleCreateGroup()}
-          />
-          <button
-            onClick={handleCreateGroup}
-            className="px-3 py-1 text-sm bg-[var(--ffxiv-accent)] hover:bg-[var(--ffxiv-accent-hover)] rounded transition-colors"
-          >
-            新增群組
-          </button>
-        </div>
+      {/* New group input */}
+      <div className="flex gap-2">
+        <input
+          className="px-2 py-1 text-sm bg-[var(--ffxiv-bg)] border border-[var(--ffxiv-border)] rounded outline-none focus:border-[var(--ffxiv-accent)]"
+          placeholder="新群組名稱"
+          value={newGroupName}
+          onChange={e => setNewGroupName(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleCreateGroup()}
+        />
+        <button
+          onClick={handleCreateGroup}
+          className="px-3 py-1 text-sm bg-[var(--ffxiv-accent)] hover:bg-[var(--ffxiv-accent-hover)] rounded transition-colors"
+        >
+          新增群組
+        </button>
       </div>
 
-      {/* Alarms list */}
-      {sortedAlarms.length === 0 ? (
+      {/* Grouped alarms list */}
+      {alarms.length === 0 ? (
         <div className="text-center py-12 text-[var(--ffxiv-muted)]">
           <div className="text-4xl mb-3">🔔</div>
           <p>尚未設定任何鬧鐘</p>
           <p className="text-sm mt-1">在物品的採集資訊中點擊鈴鐺圖示即可加入</p>
         </div>
       ) : (
-        <div className="space-y-2">
-          {sortedAlarms.map(({ alarm, bestSpawn }) => {
-            const item = getItemById(alarm.itemId);
-            const group = groups.find(g => g.id === alarm.groupId);
-            const muted = !group?.enabled;
+        <div className="space-y-3">
+          {groups.map(group => {
+            const groupAlarms = sortedAlarms.filter(a => a.alarm.groupId === group.id);
+            const isCollapsed = collapsedGroups.has(group.id);
+            const muted = !group.enabled;
+            const hasActive = groupAlarms.some(a => a.bestSpawn.active);
+
+            return (
+              <div
+                key={group.id}
+                className="rounded border border-[var(--ffxiv-border)] bg-[var(--ffxiv-card)] overflow-hidden"
+              >
+                {/* Group header (clickable to collapse/expand) */}
+                <div
+                  onClick={() => toggleCollapsed(group.id)}
+                  className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-[var(--ffxiv-bg)] transition-colors select-none"
+                >
+                  <svg
+                    className={`w-4 h-4 text-[var(--ffxiv-muted)] transition-transform ${isCollapsed ? '' : 'rotate-90'}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); toggleGroup(group.id); }}
+                    className="flex-shrink-0"
+                    title={group.enabled ? '點擊靜音' : '點擊啟用'}
+                  >
+                    {group.enabled ? (
+                      <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707A1 1 0 0112 5.586v12.828a1 1 0 01-1.707.707L5.586 15z" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5 text-[var(--ffxiv-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707A1 1 0 0112 5.586v12.828a1 1 0 01-1.707.707L5.586 15z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+                      </svg>
+                    )}
+                  </button>
+                  {editingGroup === group.id ? (
+                    <input
+                      className="flex-1 bg-transparent border-b border-[var(--ffxiv-accent)] text-sm outline-none"
+                      value={editName}
+                      onChange={e => setEditName(e.target.value)}
+                      onClick={e => e.stopPropagation()}
+                      onBlur={() => handleRename(group.id)}
+                      onKeyDown={e => { if (e.key === 'Enter') handleRename(group.id); if (e.key === 'Escape') setEditingGroup(null); }}
+                      autoFocus
+                    />
+                  ) : (
+                    <span className={`flex-1 text-sm font-medium ${muted ? 'text-[var(--ffxiv-muted)]' : ''}`}>
+                      {group.name}
+                      {hasActive && <span className="ml-2 text-xs text-green-400">● 採集中</span>}
+                    </span>
+                  )}
+                  <span className="text-xs text-[var(--ffxiv-muted)]">
+                    {groupAlarms.length} 個鬧鐘
+                  </span>
+                  {editingGroup !== group.id && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); startRename(group.id, group.name); }}
+                      className="p-1 text-[var(--ffxiv-muted)] hover:text-[var(--ffxiv-accent)] transition-colors"
+                      title="重新命名"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                      </svg>
+                    </button>
+                  )}
+                  {group.id !== 'default' && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); deleteGroup(group.id); }}
+                      className="p-1 text-[var(--ffxiv-muted)] hover:text-red-400 transition-colors"
+                      title="刪除群組（鬧鐘將移至預設）"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+
+                {/* Group body (alarms) */}
+                {!isCollapsed && (
+                  <div className="border-t border-[var(--ffxiv-border)] p-2 space-y-2">
+                    {groupAlarms.length === 0 ? (
+                      <div className="text-center py-3 text-xs text-[var(--ffxiv-muted)]">
+                        此群組沒有鬧鐘
+                      </div>
+                    ) : groupAlarms.map(({ alarm, bestSpawn }) => {
+                      const item = getItemById(alarm.itemId);
 
             // Resolve location: prefer stored data, fall back to gathering point lookup
             let locPlace = alarm.placeName;
@@ -333,6 +382,11 @@ export function AlarmsPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
+              </div>
+            );
+                    })}
+                  </div>
+                )}
               </div>
             );
           })}
