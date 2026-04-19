@@ -94,6 +94,8 @@ export function AlarmProvider({ children }: { children: ReactNode }) {
     if (state.alarms.length === 0) return;
 
     const check = () => {
+      const pending: { key: string; itemName: string; startHour: number }[] = [];
+
       state.alarms.forEach((alarm) => {
         const group = state.groups.find(g => g.id === alarm.groupId);
         if (!group?.enabled) return;
@@ -105,20 +107,36 @@ export function AlarmProvider({ children }: { children: ReactNode }) {
           if (notifiedRef.current.has(key)) return;
           notifiedRef.current.add(key);
 
-          // Clear after the window passes (duration in real seconds)
           const clearAfter = (alarm.duration * 175 / 60 + 60) * 1000;
           setTimeout(() => notifiedRef.current.delete(key), clearAfter);
 
-          if (Notification.permission === 'granted') {
-            const itemData = getItemById(alarm.itemId);
-            const itemName = itemData?.name || `物品 #${alarm.itemId}`;
-            new Notification('採集鬧鐘', {
-              body: `${itemName} 即將出現！(ET ${String(info.startHour).padStart(2, '0')}:00)`,
-              icon: `${import.meta.env.BASE_URL}favicon.ico`,
-            });
-          }
+          const itemData = getItemById(alarm.itemId);
+          const itemName = itemData?.name || `物品 #${alarm.itemId}`;
+          pending.push({ key, itemName, startHour: info.startHour });
         });
       });
+
+      if (pending.length === 0 || Notification.permission !== 'granted') return;
+
+      if (pending.length === 1) {
+        const p = pending[0];
+        new Notification('採集鬧鐘', {
+          body: `${p.itemName} 即將出現！(ET ${String(p.startHour).padStart(2, '0')}:00)`,
+          icon: `${import.meta.env.BASE_URL}favicon.ico`,
+          tag: p.key,
+          renotify: true,
+        } as NotificationOptions);
+      } else {
+        const lines = pending.map(p =>
+          `• ${p.itemName} (ET ${String(p.startHour).padStart(2, '0')}:00)`
+        ).join('\n');
+        new Notification(`採集鬧鐘（${pending.length} 個採集點）`, {
+          body: lines,
+          icon: `${import.meta.env.BASE_URL}favicon.ico`,
+          tag: `batch-${pending.map(p => p.key).join('|')}`,
+          renotify: true,
+        } as NotificationOptions);
+      }
     };
 
     check();
