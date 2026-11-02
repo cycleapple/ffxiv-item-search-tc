@@ -167,7 +167,7 @@ function Header({ onSettingsOpen }: { onSettingsOpen: () => void }) {
               加入Discord社群
             </a>
             <a
-              href="https://portaly.cc/thecy"
+              href="https://p.ecpay.com.tw/5630EBB"
               target="_blank"
               rel="noopener noreferrer"
               className="text-sm text-[var(--ffxiv-muted)] hover:text-[var(--ffxiv-accent)] transition-colors"
